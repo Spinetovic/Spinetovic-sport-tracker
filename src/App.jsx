@@ -1,5 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 
+function useIsMobile() {
+  const [mobile, setMobile] = useState(window.innerWidth < 640);
+  useEffect(() => {
+    const handler = () => setMobile(window.innerWidth < 640);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return mobile;
+}
+
 const ATHLETES = ["Tom", "Camille"];
 const SPORTS = ["Course à pied", "Hyrox", "Musculation"];
 
@@ -312,7 +322,8 @@ function RunningRecords({ data }) {
 
       {view === "PRs" && <>
         <div style={{ color: "#555", fontSize: 13 }}>Meilleur temps enregistré par distance et par athlète.</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "hidden" }}>
+        <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "auto" }}>
+          <div style={{ minWidth: 420, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", background: "#0a0a0a" }}>
           <div style={{ padding: "12px 20px", borderBottom: "1px solid #1a1a1a", color: "#444", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>Distance</div>
           {ATHLETES.map(a => (
             <div key={a} style={{ padding: "12px 20px", borderBottom: "1px solid #1a1a1a", borderLeft: "1px solid #1a1a1a", color: "#fff", fontSize: 13, fontWeight: 800 }}>{a}</div>
@@ -339,6 +350,7 @@ function RunningRecords({ data }) {
               })
             ];
           })}
+        </div>
         </div>
 
         {RUNNING_PR_DISTANCES.some(d => ATHLETES.some(a => getPR(a, d))) && (
@@ -482,8 +494,8 @@ function RunningRecords({ data }) {
                 </div>
 
                 {/* Data table */}
-                <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "hidden" }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 80px 80px 70px 90px 90px 80px", borderBottom: "1px solid #1a1a1a", background: "#0d0d0d" }}>
+                <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "auto" }}>
+                  <div style={{ minWidth: 500, display: "grid", gridTemplateColumns: "1fr 80px 80px 70px 90px 90px 80px", borderBottom: "1px solid #1a1a1a", background: "#0d0d0d" }}>
                     {["Date", "Athlète", "Temps", "Allure", "Général", "Genre", "Évol."].map(h => (
                       <div key={h} style={{ padding: "10px 14px", color: "#444", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</div>
                     ))}
@@ -495,7 +507,7 @@ function RunningRecords({ data }) {
                     const acol = ATHLETE_COLORS[r.athlete];
                     const isPR = r.secs === Math.min(...runs.filter(x => x.athlete === r.athlete).map(x => x.secs));
                     return (
-                      <div key={r.id} style={{ display: "grid", gridTemplateColumns: "1fr 80px 80px 70px 90px 90px 80px", borderBottom: i < runs.length - 1 ? "1px solid #111" : "none", background: i % 2 === 0 ? "#0a0a0a" : "#0d0d0d" }}>
+                      <div key={r.id} style={{ display: "grid", gridTemplateColumns: "1fr 80px 80px 70px 90px 90px 80px", minWidth: 500, borderBottom: i < runs.length - 1 ? "1px solid #111" : "none", background: i % 2 === 0 ? "#0a0a0a" : "#0d0d0d" }}>
                         <div style={{ padding: "12px 14px", color: "#777", fontSize: 13 }}>
                           {r.date}
                           {isPR && <span style={{ marginLeft: 8, color: col.main, fontSize: 10, fontWeight: 800 }}>★ PR</span>}
@@ -547,33 +559,18 @@ function RunningRecords({ data }) {
 }
 
 // ── RUNNING TAB ───────────────────────────────────────────────────────────────
-function RunningTab({ data, setData }) {
+function RunningTab({ data, setData, raceNames, setRaceNames }) {
   const [subTab, setSubTab] = useState("Historique");
   const [form, setForm] = useState(defaultRunForm);
   const [filter, setFilter] = useState("Tous");
   const [editingId, setEditingId] = useState(null);
-  const [raceNames, setRaceNames] = useState(DEFAULT_RACE_NAMES);
   const [newRaceName, setNewRaceName] = useState("");
   const [showAddRace, setShowAddRace] = useState(false);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const result = await window.storage.get("run-race-names");
-        if (result) setRaceNames(JSON.parse(result.value));
-      } catch {}
-    })();
-  }, []);
-
-  const saveRaceNames = async (names) => {
-    setRaceNames(names);
-    try { await window.storage.set("run-race-names", JSON.stringify(names)); } catch {}
-  };
 
   const addRaceName = () => {
     const trimmed = newRaceName.trim();
     if (!trimmed || raceNames.includes(trimmed)) return;
-    saveRaceNames([...raceNames, trimmed]);
+    setRaceNames([...raceNames, trimmed]);
     setNewRaceName("");
     setShowAddRace(false);
     update("raceName", trimmed);
@@ -677,7 +674,7 @@ function RunningTab({ data, setData }) {
               <div style={{ color: "#fff", fontWeight: 800, fontSize: 15 }}>{editingId ? "✎ Modifier la sortie" : "+ Ajouter une sortie"}</div>
               {editingId && <button onClick={() => { setEditingId(null); setForm(defaultRunForm); setSubTab("Historique"); }} style={{ background: "transparent", border: "1px solid #333", borderRadius: 8, color: "#555", fontSize: 12, padding: "5px 12px", cursor: "pointer", fontFamily: "inherit" }}>Annuler</button>}
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }} className="form-grid">
               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 <label style={{ color: "#666", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>Athlète</label>
                 <AthleteSelector value={form.athlete} onChange={v => update("athlete", v)} />
@@ -1059,7 +1056,7 @@ function HyroxTab({ data, setData }) {
             <div style={{ color: "#fff", fontWeight: 800, fontSize: 15 }}>{editingId ? "✎ Modifier la course" : "+ Ajouter une course Hyrox"}</div>
             {editingId && <button onClick={() => { setEditingId(null); setForm(defaultHyroxForm); setSubTab("Historique"); }} style={{ background: "transparent", border: "1px solid #333", borderRadius: 8, color: "#555", fontSize: 12, padding: "5px 12px", cursor: "pointer", fontFamily: "inherit" }}>Annuler</button>}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 16 }} className="form-grid">
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <label style={{ color: "#666", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>Athlète</label>
               <AthleteSelector value={form.athlete} onChange={v => update("athlete", v)} />
@@ -1336,7 +1333,7 @@ function MusculationTab({ data, setData }) {
             <div style={{ color: "#fff", fontWeight: 800, fontSize: 15 }}>{editingId ? "✎ Modifier la série" : "+ Ajouter une série"}</div>
             {editingId && <button onClick={() => { setEditingId(null); setForm(defaultMuscuForm); setSubTab("Historique"); }} style={{ background: "transparent", border: "1px solid #333", borderRadius: 8, color: "#555", fontSize: 12, padding: "5px 12px", cursor: "pointer", fontFamily: "inherit" }}>Annuler</button>}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }} className="form-grid">
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <label style={{ color: "#666", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>Athlète</label>
               <AthleteSelector value={form.athlete} onChange={v => update("athlete", v)} />
@@ -1445,6 +1442,31 @@ function MusculationTab({ data, setData }) {
   );
 }
 
+// ── PR NOTIFICATION ───────────────────────────────────────────────────────────
+function PRToast({ message, onClose }) {
+  useEffect(() => {
+    const t = setTimeout(onClose, 4000);
+    return () => clearTimeout(t);
+  }, []);
+  return (
+    <div style={{
+      position: "fixed", bottom: 24, right: 24, zIndex: 1000,
+      background: "#1a1a1a", border: "1px solid #A8FF3E44",
+      borderRadius: 14, padding: "14px 20px",
+      display: "flex", alignItems: "center", gap: 12,
+      boxShadow: "0 8px 32px #00000088",
+      animation: "slideIn 0.3s ease",
+    }}>
+      <span style={{ fontSize: 24 }}>🏆</span>
+      <div>
+        <div style={{ color: "#A8FF3E", fontWeight: 800, fontSize: 13 }}>Nouveau record personnel !</div>
+        <div style={{ color: "#888", fontSize: 12, marginTop: 2 }}>{message}</div>
+      </div>
+      <button onClick={onClose} style={{ background: "none", border: "none", color: "#555", fontSize: 18, cursor: "pointer", marginLeft: 8 }}>×</button>
+    </div>
+  );
+}
+
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
 function Dashboard({ runData, hyroxData, muscuData }) {
   const recent = [
@@ -1453,21 +1475,84 @@ function Dashboard({ runData, hyroxData, muscuData }) {
     ...muscuData.map(r => ({ ...r, sport: "Musculation" })),
   ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 8);
 
+  // PRs par athlète
+  const getRunPRs = (athlete) => {
+    const prs = {};
+    RUNNING_PR_DISTANCES.forEach(dist => {
+      const runs = runData.filter(r => r.athlete === athlete && r.distance === dist && r.secs);
+      if (runs.length) prs[dist] = runs.reduce((b, r) => r.secs < b.secs ? r : b);
+    });
+    return prs;
+  };
+
+  const getHyroxPR = (athlete) => {
+    const races = hyroxData.filter(r => r.athlete === athlete && r.totalSecs);
+    return races.length ? races.reduce((b, r) => r.totalSecs < b.totalSecs ? r : b) : null;
+  };
+
+  const getMuscuPRs = (athlete) => {
+    const prs = {};
+    muscuData.filter(r => r.athlete === athlete && r.weight).forEach(r => {
+      if (!prs[r.exercise] || parseFloat(r.weight) > parseFloat(prs[r.exercise].weight)) prs[r.exercise] = r;
+    });
+    return prs;
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      {/* Cartes athlètes */}
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-        {ATHLETES.map(a => (
-          <div key={a} style={{ flex: 1, minWidth: 260, background: "#0f0f0f", border: "1px solid #1e1e1e", borderRadius: 16, padding: "20px 24px" }}>
-            <div style={{ color: "#fff", fontWeight: 900, fontSize: 20, marginBottom: 16 }}>{a}</div>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <StatCard label="Sorties run" value={runData.filter(r => r.athlete === a).length} color={SPORT_COLORS["Course à pied"].main} />
-              <StatCard label="Courses Hyrox" value={hyroxData.filter(r => r.athlete === a).length} color={SPORT_COLORS["Hyrox"].main} />
-              <StatCard label="Séries muscu" value={muscuData.filter(r => r.athlete === a).length} color={SPORT_COLORS["Musculation"].main} />
+        {ATHLETES.map(a => {
+          const runPRs = getRunPRs(a);
+          const hyroxPR = getHyroxPR(a);
+          const muscuPRs = getMuscuPRs(a);
+          const totalActivities = runData.filter(r => r.athlete === a).length + hyroxData.filter(r => r.athlete === a).length + muscuData.filter(r => r.athlete === a).length;
+
+          return (
+            <div key={a} style={{ flex: 1, minWidth: 260, background: "#0f0f0f", border: "1px solid #1e1e1e", borderRadius: 16, padding: "20px 24px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <div style={{ color: "#fff", fontWeight: 900, fontSize: 20 }}>{a}</div>
+                <div style={{ color: "#444", fontSize: 12 }}>{totalActivities} activité{totalActivities > 1 ? "s" : ""}</div>
+              </div>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
+                <StatCard label="Sorties run" value={runData.filter(r => r.athlete === a).length} color={SPORT_COLORS["Course à pied"].main} />
+                <StatCard label="Hyrox" value={hyroxData.filter(r => r.athlete === a).length} color={SPORT_COLORS["Hyrox"].main} />
+                <StatCard label="Muscu" value={muscuData.filter(r => r.athlete === a).length} color={SPORT_COLORS["Musculation"].main} />
+              </div>
+
+              {/* PRs résumé */}
+              <div style={{ borderTop: "1px solid #1a1a1a", paddingTop: 14 }}>
+                <div style={{ color: "#444", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>🏆 Records</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {Object.entries(runPRs).slice(0, 3).map(([dist, pr]) => (
+                    <div key={dist} style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "#555", fontSize: 12 }}>🏃 {dist}</span>
+                      <span style={{ color: SPORT_COLORS["Course à pied"].main, fontWeight: 700, fontSize: 12 }}>{formatTime(pr.secs)}</span>
+                    </div>
+                  ))}
+                  {hyroxPR && (
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "#555", fontSize: 12 }}>⚡ Hyrox</span>
+                      <span style={{ color: SPORT_COLORS["Hyrox"].main, fontWeight: 700, fontSize: 12 }}>{formatTime(hyroxPR.totalSecs)}</span>
+                    </div>
+                  )}
+                  {Object.entries(muscuPRs).slice(0, 2).map(([ex, pr]) => (
+                    <div key={ex} style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "#555", fontSize: 12 }}>🏋️ {ex}</span>
+                      <span style={{ color: SPORT_COLORS["Musculation"].main, fontWeight: 700, fontSize: 12 }}>{pr.weight} kg</span>
+                    </div>
+                  ))}
+                  {!Object.keys(runPRs).length && !hyroxPR && !Object.keys(muscuPRs).length && (
+                    <div style={{ color: "#333", fontSize: 12 }}>Aucun record encore</div>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
+      {/* Activité récente */}
       <div>
         <div style={{ color: "#fff", fontWeight: 800, fontSize: 15, marginBottom: 12 }}>Activité récente</div>
         {recent.length === 0 ? (
@@ -1476,14 +1561,9 @@ function Dashboard({ runData, hyroxData, muscuData }) {
           const col = SPORT_COLORS[r.sport];
           return (
             <div key={r.id} style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "12px 18px",
-              background: "#0a0a0a",
-              border: "1px solid #1a1a1a",
-              borderRadius: 12,
-              marginBottom: 8,
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+              padding: "12px 18px", background: "#0a0a0a", border: "1px solid #1a1a1a",
+              borderRadius: 12, marginBottom: 8,
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <span style={{ fontSize: 20 }}>{SPORT_ICONS[r.sport]}</span>
@@ -1491,6 +1571,7 @@ function Dashboard({ runData, hyroxData, muscuData }) {
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     <Badge color={col.main}>{r.athlete}</Badge>
                     <span style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>{r.sport}</span>
+                    {r.raceName && <span style={{ color: "#555", fontSize: 12 }}>· {r.raceName}</span>}
                   </div>
                   <div style={{ color: "#555", fontSize: 12, marginTop: 2 }}>{r.date}</div>
                 </div>
@@ -1519,6 +1600,18 @@ const FIREBASE_CONFIG = {
   appId: "1:445883101396:web:f71c0c653b12d50b2ecb41"
 };
 
+// Initialisation Firebase partagée
+let _firebaseDb = null;
+
+async function getFirebaseDb() {
+  if (_firebaseDb) return _firebaseDb;
+  const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+  const { getDatabase } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+  const app = getApps().length ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
+  _firebaseDb = getDatabase(app);
+  return _firebaseDb;
+}
+
 function useFirebase(path) {
   const [data, setData] = useState([]);
   const [ready, setReady] = useState(false);
@@ -1528,10 +1621,8 @@ function useFirebase(path) {
     let unsubscribe;
     (async () => {
       try {
-        const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
-        const { getDatabase, ref, onValue, set } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
-        const app = getApps().length ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
-        const db = getDatabase(app);
+        const db = await getFirebaseDb();
+        const { ref, onValue, set } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
         const r = ref(db, path);
         dbRef.current = { ref: r, set };
         unsubscribe = onValue(r, snap => {
@@ -1562,15 +1653,92 @@ function useFirebase(path) {
   return [data, setAndSync, ready];
 }
 
+function useFirebaseValue(path, defaultValue) {
+  const [value, setValue] = useState(defaultValue);
+  const dbRef = useRef(null);
+
+  useEffect(() => {
+    let unsubscribe;
+    (async () => {
+      try {
+        const db = await getFirebaseDb();
+        const { ref, onValue, set } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+        const r = ref(db, path);
+        dbRef.current = { ref: r, set };
+        unsubscribe = onValue(r, snap => {
+          const val = snap.val();
+          setValue(val !== null ? val : defaultValue);
+        });
+      } catch (e) { console.error(e); }
+    })();
+    return () => { if (unsubscribe) unsubscribe(); };
+  }, [path]);
+
+  const setAndSync = (newVal) => {
+    setValue(newVal);
+    if (dbRef.current) dbRef.current.set(dbRef.current.ref, newVal);
+  };
+
+  return [value, setAndSync];
+}
+
 // ── APP ───────────────────────────────────────────────────────────────────────
 export default function App() {
   const [tab, setTab] = useState("Dashboard");
-  const [runData, setRunData, runReady] = useFirebase("runs");
-  const [hyroxData, setHyroxData, hyroxReady] = useFirebase("hyrox");
-  const [muscuData, setMuscuData, muscuReady] = useFirebase("muscu");
-  const allReady = runReady && hyroxReady && muscuReady;
+  const [prToast, setPrToast] = useState(null);
 
+  const [runData, setRunDataRaw, runReady] = useFirebase("runs");
+  const [hyroxData, setHyroxDataRaw, hyroxReady] = useFirebase("hyrox");
+  const [muscuData, setMuscuDataRaw, muscuReady] = useFirebase("muscu");
+  const [raceNames, setRaceNamesRaw] = useFirebaseValue("raceNames", DEFAULT_RACE_NAMES);
+
+  const allReady = runReady && hyroxReady && muscuReady;
   const tabs = ["Dashboard", "Course à pied", "Hyrox", "Musculation"];
+
+  const setRunData = (updater) => {
+    setRunDataRaw(prev => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      if (next.length > prev.length) {
+        const newEntry = next[next.length - 1];
+        if (newEntry?.secs && newEntry?.distance) {
+          const prevBest = prev.filter(r => r.athlete === newEntry.athlete && r.distance === newEntry.distance && r.secs);
+          const wasPR = !prevBest.length || newEntry.secs < Math.min(...prevBest.map(r => r.secs));
+          if (wasPR) setPrToast(`${newEntry.athlete} — ${newEntry.distance} en ${formatTime(newEntry.secs)} 🎉`);
+        }
+      }
+      return next;
+    });
+  };
+
+  const setHyroxData = (updater) => {
+    setHyroxDataRaw(prev => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      if (next.length > prev.length) {
+        const newEntry = next[next.length - 1];
+        if (newEntry?.totalSecs) {
+          const prevBest = prev.filter(r => r.athlete === newEntry.athlete && r.totalSecs);
+          const wasPR = !prevBest.length || newEntry.totalSecs < Math.min(...prevBest.map(r => r.totalSecs));
+          if (wasPR) setPrToast(`${newEntry.athlete} — Hyrox en ${formatTime(newEntry.totalSecs)} 🎉`);
+        }
+      }
+      return next;
+    });
+  };
+
+  const setMuscuData = (updater) => {
+    setMuscuDataRaw(prev => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      if (next.length > prev.length) {
+        const newEntry = next[next.length - 1];
+        if (newEntry?.weight && newEntry?.exercise) {
+          const prevBest = prev.filter(r => r.athlete === newEntry.athlete && r.exercise === newEntry.exercise && r.weight);
+          const wasPR = !prevBest.length || parseFloat(newEntry.weight) > Math.max(...prevBest.map(r => parseFloat(r.weight)));
+          if (wasPR) setPrToast(`${newEntry.athlete} — ${newEntry.exercise} : ${newEntry.weight}kg 🎉`);
+        }
+      }
+      return next;
+    });
+  };
 
   return (
     <div style={{ minHeight: "100vh", background: "#060606", color: "#fff", fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif" }}>
@@ -1583,43 +1751,54 @@ export default function App() {
         input[type=date]::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.4; }
         select option { background: #111; }
         @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        input, select, textarea, button { font-size: 16px !important; }
+        @media (max-width: 640px) {
+          .header-pad { padding: 16px 16px 0 !important; }
+          .content-pad { padding: 16px !important; }
+          .header-title { font-size: 20px !important; }
+          .nav-btn { padding: 8px 10px !important; font-size: 11px !important; }
+          .grid-auto { grid-template-columns: 1fr 1fr !important; }
+          .grid-single { grid-template-columns: 1fr !important; }
+          .hide-mobile { display: none !important; }
+          .pr-table { font-size: 11px !important; }
+          .pr-table-col { grid-template-columns: 1fr 1fr 1fr !important; }
+          .form-grid { grid-template-columns: 1fr 1fr !important; }
+          .prog-table { grid-template-columns: 80px 60px 70px 60px !important; overflow-x: auto; }
+        }
       `}</style>
 
+      {prToast && <PRToast message={prToast} onClose={() => setPrToast(null)} />}
+
       {/* Header */}
-      <div style={{ padding: "28px 32px 0", borderBottom: "1px solid #111" }}>
+      <div className="header-pad" style={{ padding: "28px 32px 0", borderBottom: "1px solid #111" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
-          <div style={{ fontSize: 28, fontWeight: 900, letterSpacing: "-0.03em" }}>
+          <div className="header-title" style={{ fontSize: 28, fontWeight: 900, letterSpacing: "-0.03em" }}>
             TOM <span style={{ color: "#333" }}>&</span> CAMILLE
           </div>
-          <div style={{ color: "#444", fontSize: 13, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>Sport Tracker</div>
+          <div className="hide-mobile" style={{ color: "#444", fontSize: 13, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>Sport Tracker</div>
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
             {allReady ? (
-              <>
-                <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#4ade80" }} />
-                <span style={{ color: "#444", fontSize: 11 }}>Synchronisé</span>
-              </>
+              <><div style={{ width: 7, height: 7, borderRadius: "50%", background: "#4ade80" }} /><span style={{ color: "#444", fontSize: 11 }}>Synchronisé</span></>
             ) : (
-              <>
-                <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#FF6B35", animation: "spin 1s linear infinite" }} />
-                <span style={{ color: "#555", fontSize: 11 }}>Connexion…</span>
-              </>
+              <><div style={{ width: 7, height: 7, borderRadius: "50%", background: "#FF6B35", animation: "spin 1s linear infinite" }} /><span style={{ color: "#555", fontSize: 11 }}>Connexion…</span></>
             )}
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 0 }}>
+        <div style={{ display: "flex", gap: 0, overflowX: "auto" }}>
           {tabs.map(t => {
             const isActive = tab === t;
             const col = t !== "Dashboard" ? SPORT_COLORS[t]?.main : "#fff";
             return (
-              <button key={t} onClick={() => setTab(t)} style={{
+              <button key={t} className="nav-btn" onClick={() => setTab(t)} style={{
                 padding: "10px 20px", background: "transparent", border: "none",
                 borderBottom: isActive ? `2px solid ${col}` : "2px solid transparent",
                 color: isActive ? col : "#444", fontWeight: isActive ? 800 : 600,
                 fontSize: 13, cursor: "pointer", letterSpacing: "0.02em",
-                transition: "all 0.15s", fontFamily: "inherit",
+                transition: "all 0.15s", fontFamily: "inherit", whiteSpace: "nowrap", flexShrink: 0,
               }}>
-                {t !== "Dashboard" && SPORT_ICONS[t] + " "}{t}
+                {SPORT_ICONS[t] ? SPORT_ICONS[t] + " " : ""}{t}
               </button>
             );
           })}
@@ -1627,7 +1806,7 @@ export default function App() {
       </div>
 
       {/* Content */}
-      <div style={{ padding: "28px 32px", maxWidth: 960, margin: "0 auto" }}>
+      <div className="content-pad" style={{ padding: "28px 32px", maxWidth: 960, margin: "0 auto" }}>
         {!allReady ? (
           <div style={{ textAlign: "center", padding: 80, color: "#444" }}>
             <div style={{ fontSize: 32, marginBottom: 12 }}>⚡</div>
@@ -1636,7 +1815,7 @@ export default function App() {
         ) : (
           <>
             {tab === "Dashboard" && <Dashboard runData={runData} hyroxData={hyroxData} muscuData={muscuData} />}
-            {tab === "Course à pied" && <RunningTab data={runData} setData={setRunData} />}
+            {tab === "Course à pied" && <RunningTab data={runData} setData={setRunData} raceNames={raceNames} setRaceNames={setRaceNamesRaw} />}
             {tab === "Hyrox" && <HyroxTab data={hyroxData} setData={setHyroxData} />}
             {tab === "Musculation" && <MusculationTab data={muscuData} setData={setMuscuData} />}
           </>
