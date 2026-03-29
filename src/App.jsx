@@ -129,7 +129,7 @@ const DEFAULT_RACE_NAMES = [
 
 const defaultRunForm = { date: "", distance: "", time: "", pace: "", raceName: "", rankOverall: "", totalOverall: "", rankGender: "", totalGender: "", notes: "", athlete: "Tom" };
 const HYROX_CATEGORIES = ["Solo", "Double Mixte", "Double Hommes", "Double Femmes"];
-const defaultHyroxForm = { date: "", totalTime: "", runTime: "", roxzoneTime: "", category: "Solo", stations: {}, notes: "", athlete: "Tom" };
+const defaultHyroxForm = { date: "", totalTime: "", runTime: "", roxzoneTime: "", category: "Solo", partner: "", stations: {}, notes: "", athlete: "Tom" };
 const defaultMuscuForm = { date: "", exercise: "", sets: "", reps: "", weight: "", notes: "", athlete: "Tom" };
 
 function formatTime(seconds) {
@@ -1050,13 +1050,25 @@ function HyroxRecords({ data }) {
 }
 
 // ── HYROX TAB ─────────────────────────────────────────────────────────────────
-function HyroxTab({ data, setData }) {
+function HyroxTab({ data, setData, partners, setPartners }) {
   const [subTab, setSubTab] = useState("Historique");
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(defaultHyroxForm);
   const [filter, setFilter] = useState("Tous");
+  const [newPartner, setNewPartner] = useState("");
+  const [showAddPartner, setShowAddPartner] = useState(false);
 
   const col = SPORT_COLORS["Hyrox"];
+  const isDouble = form.category !== "Solo";
+
+  const addPartner = () => {
+    const trimmed = newPartner.trim();
+    if (!trimmed || partners.includes(trimmed)) return;
+    setPartners([...partners, trimmed]);
+    setNewPartner("");
+    setShowAddPartner(false);
+    update("partner", trimmed);
+  };
 
   const update = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const updateStation = (s, v) => setForm(f => ({ ...f, stations: { ...f.stations, [s]: v } }));
@@ -1159,6 +1171,53 @@ function HyroxTab({ data, setData }) {
             <Input label="Temps total" value={form.totalTime} onChange={v => update("totalTime", v)} placeholder="01:15:00" />
             <Input label="Temps de run" value={form.runTime} onChange={v => update("runTime", v)} placeholder="00:35:00" />
             <Input label="Temps Roxzone" value={form.roxzoneTime} onChange={v => update("roxzoneTime", v)} placeholder="00:40:00" />
+            {isDouble && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <label style={{ color: "#666", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>Partenaire</label>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <select
+                    value={form.partner}
+                    onChange={e => update("partner", e.target.value)}
+                    style={{
+                      flex: 1, background: "#0d0d0d", border: "1px solid #222", borderRadius: 8,
+                      padding: "9px 12px", color: form.partner ? "#fff" : "#555", fontSize: 14,
+                      outline: "none", boxSizing: "border-box", fontFamily: "inherit", cursor: "pointer",
+                    }}
+                  >
+                    <option value="">— Choisir —</option>
+                    {partners.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                  <button onClick={() => setShowAddPartner(v => !v)} title="Ajouter un partenaire"
+                    style={{
+                      width: 36, height: 36, borderRadius: 8,
+                      border: `1.5px solid ${showAddPartner ? col.main : "#222"}`,
+                      background: showAddPartner ? col.main + "22" : "transparent",
+                      color: showAddPartner ? col.main : "#555",
+                      fontWeight: 900, fontSize: 18, cursor: "pointer", fontFamily: "inherit",
+                      flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>+</button>
+                </div>
+                {showAddPartner && (
+                  <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                    <input
+                      value={newPartner}
+                      onChange={e => setNewPartner(e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && addPartner()}
+                      placeholder="Prénom du partenaire..."
+                      style={{
+                        flex: 1, background: "#0d0d0d", border: `1px solid ${col.main}44`, borderRadius: 8,
+                        padding: "8px 12px", color: "#fff", fontSize: 13, outline: "none", fontFamily: "inherit",
+                      }}
+                    />
+                    <button onClick={addPartner} style={{
+                      padding: "8px 14px", borderRadius: 8, border: "none",
+                      background: col.main, color: "#000", fontWeight: 800, fontSize: 12,
+                      cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
+                    }}>Ajouter</button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <div style={{ color: "#666", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Temps par station</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 8, marginBottom: 16 }}>
@@ -1196,6 +1255,7 @@ function HyroxTab({ data, setData }) {
                   <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 4 }}>
                     <Badge color={col.main}>{r.athlete}</Badge>
                     {r.category && r.category !== "Solo" && <Badge color="#555">{r.category}</Badge>}
+                    {r.partner && <span style={{ color: "#555", fontSize: 12 }}>avec {r.partner}</span>}
                     <span style={{ color: "#555", fontSize: 12 }}>{r.date}</span>
                   </div>
                   {r.notes && <div style={{ color: "#555", fontSize: 12 }}>{r.notes}</div>}
@@ -1771,6 +1831,7 @@ export default function App() {
   const [hyroxData, setHyroxDataRaw, hyroxReady] = useFirebase("hyrox");
   const [muscuData, setMuscuDataRaw, muscuReady] = useFirebase("muscu");
   const [raceNames, setRaceNamesRaw] = useFirebaseValue("raceNames", DEFAULT_RACE_NAMES);
+  const [hyroxPartners, setHyroxPartners] = useFirebaseValue("hyroxPartners", []);
 
   const allReady = runReady && hyroxReady && muscuReady;
   const tabs = ["Dashboard", "Course à pied", "Hyrox", "Musculation"];
@@ -1896,7 +1957,7 @@ export default function App() {
           <>
             {tab === "Dashboard" && <Dashboard runData={runData} hyroxData={hyroxData} muscuData={muscuData} />}
             {tab === "Course à pied" && <RunningTab data={runData} setData={setRunData} raceNames={raceNames} setRaceNames={setRaceNamesRaw} />}
-            {tab === "Hyrox" && <HyroxTab data={hyroxData} setData={setHyroxData} />}
+            {tab === "Hyrox" && <HyroxTab data={hyroxData} setData={setHyroxData} partners={hyroxPartners} setPartners={setHyroxPartners} />}
             {tab === "Musculation" && <MusculationTab data={muscuData} setData={setMuscuData} />}
           </>
         )}
