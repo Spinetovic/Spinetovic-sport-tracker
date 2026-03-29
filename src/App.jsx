@@ -977,8 +977,8 @@ function HyroxComparison({ data }) {
   const raceLabel = (r) => `${r.eventName ? r.eventName + " — " : ""}${r.date} · ${r.athlete}${r.category !== "Solo" ? ` (${r.category})` : ""}`;
 
   const races = [...data].filter(r => r.totalSecs).sort((a, b) => b.date.localeCompare(a.date));
-  const a = races.find(r => r.id === raceA);
-  const b = races.find(r => r.id === raceB);
+  const a = races.find(r => String(r.id) === String(raceA));
+  const b = races.find(r => String(r.id) === String(raceB));
 
   const SelectRow = ({ label, value, onChange }) => (
     <div style={{ flex: 1, minWidth: 200, display: "flex", flexDirection: "column", gap: 6 }}>
@@ -1042,7 +1042,7 @@ function HyroxComparison({ data }) {
         <SelectRow label="Course B" value={raceB} onChange={setRaceB} />
       </div>
 
-      {!a && !b && (
+      {!a && !b && raceA === "" && raceB === "" && (
         <div style={{ color: "#333", textAlign: "center", padding: 40, fontSize: 14 }}>
           Sélectionnez deux courses pour les comparer.
         </div>
