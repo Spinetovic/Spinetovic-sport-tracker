@@ -140,7 +140,7 @@ const DEFAULT_RACE_NAMES = [
 
 const defaultRunForm = { date: "", distance: "", time: "", pace: "", raceName: "", rankOverall: "", totalOverall: "", rankGender: "", totalGender: "", notes: "", athlete: "Tom" };
 const HYROX_CATEGORIES = ["Solo", "Double Mixte", "Double Hommes", "Double Femmes"];
-const defaultHyroxForm = { date: "", totalTime: "", runTime: "", roxzoneTime: "", category: "Solo", partner: "", stations: {}, runs: {}, notes: "", athlete: "Tom" };
+const defaultHyroxForm = { date: "", eventName: "", totalTime: "", runTime: "", roxzoneTime: "", category: "Solo", partner: "", stations: {}, runs: {}, notes: "", athlete: "Tom" };
 const defaultMuscuForm = { date: "", exercise: "", sets: "", reps: "", weight: "", notes: "", athlete: "Tom" };
 
 function formatTime(seconds) {
@@ -724,9 +724,9 @@ function RunningTab({ data, setData, raceNames, setRaceNames }) {
         <button onClick={() => setSubTab("+")} style={{
           width: 36, height: 36,
           borderRadius: 10,
-          border: `1.5px solid ${subTab === "+" ? col.main : "#222"}`,
-          background: subTab === "+" ? col.main : "transparent",
-          color: subTab === "+" ? "#000" : "#555",
+          border: `1.5px solid ${subTab === "+" ? "#e53e3e" : "#333"}`,
+          background: subTab === "+" ? "#e53e3e" : "transparent",
+          color: subTab === "+" ? "#fff" : "#888",
           fontWeight: 900,
           fontSize: 20,
           lineHeight: 1,
@@ -968,6 +968,150 @@ function RunningTab({ data, setData, raceNames, setRaceNames }) {
   );
 }
 
+// ── HYROX COMPARISON ──────────────────────────────────────────────────────────
+function HyroxComparison({ data }) {
+  const col = SPORT_COLORS["Hyrox"];
+  const [raceA, setRaceA] = useState("");
+  const [raceB, setRaceB] = useState("");
+
+  const raceLabel = (r) => `${r.eventName ? r.eventName + " — " : ""}${r.date} · ${r.athlete}${r.category !== "Solo" ? ` (${r.category})` : ""}`;
+
+  const races = [...data].filter(r => r.totalSecs).sort((a, b) => b.date.localeCompare(a.date));
+  const a = races.find(r => r.id === raceA);
+  const b = races.find(r => r.id === raceB);
+
+  const SelectRow = ({ label, value, onChange }) => (
+    <div style={{ flex: 1, minWidth: 200, display: "flex", flexDirection: "column", gap: 6 }}>
+      <label style={{ color: "#555", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>{label}</label>
+      <select value={value} onChange={e => onChange(e.target.value)}
+        style={{ background: "#0d0d0d", border: `1px solid ${col.border}`, borderRadius: 8, padding: "9px 12px", color: value ? "#fff" : "#555", fontSize: 13, outline: "none", fontFamily: "inherit", cursor: "pointer" }}>
+        <option value="">Choisir une course…</option>
+        {races.map(r => <option key={r.id} value={r.id}>{raceLabel(r)}</option>)}
+      </select>
+    </div>
+  );
+
+  const diffStyle = (sA, sB) => {
+    if (!sA || !sB) return {};
+    return sA < sB
+      ? { color: "#4ade80", fontWeight: 800 }
+      : sA > sB
+      ? { color: "#f87171", fontWeight: 800 }
+      : { color: "#888" };
+  };
+
+  const diffLabel = (sA, sB) => {
+    if (!sA || !sB) return "";
+    const d = sA - sB;
+    if (d === 0) return "=";
+    return `${d < 0 ? "▼" : "▲"} ${formatTime(Math.abs(d))}`;
+  };
+
+  const CompRow = ({ label, sA, sB, highlight }) => {
+    const best = sA && sB ? (sA <= sB ? "A" : "B") : null;
+    return (
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderBottom: "1px solid #111", background: highlight ? "#0d0d0d" : "#0a0a0a" }}>
+        <div style={{ padding: "11px 16px", display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ color: "#777", fontSize: 12 }}>{label}</span>
+        </div>
+        <div style={{ padding: "11px 16px", borderLeft: "1px solid #161616" }}>
+          {sA ? (
+            <span style={{ ...diffStyle(sA, sB), fontSize: 14 }}>
+              {formatTime(sA)}
+              {best === "A" && sA !== sB && <span style={{ marginLeft: 6, fontSize: 10, color: "#4ade80" }}>★</span>}
+            </span>
+          ) : <span style={{ color: "#2a2a2a" }}>—</span>}
+        </div>
+        <div style={{ padding: "11px 16px", borderLeft: "1px solid #161616" }}>
+          {sB ? (
+            <span style={{ ...diffStyle(sB, sA), fontSize: 14 }}>
+              {formatTime(sB)}
+              {best === "B" && sA !== sB && <span style={{ marginLeft: 6, fontSize: 10, color: "#4ade80" }}>★</span>}
+            </span>
+          ) : <span style={{ color: "#2a2a2a" }}>—</span>}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {/* Sélecteurs */}
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+        <SelectRow label="Course A" value={raceA} onChange={setRaceA} />
+        <SelectRow label="Course B" value={raceB} onChange={setRaceB} />
+      </div>
+
+      {!a && !b && (
+        <div style={{ color: "#333", textAlign: "center", padding: 40, fontSize: 14 }}>
+          Sélectionnez deux courses pour les comparer.
+        </div>
+      )}
+
+      {(a || b) && (
+        <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "auto" }}>
+          {/* Header */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", background: "#0d0d0d", borderBottom: "1px solid #1a1a1a" }}>
+            <div style={{ padding: "12px 16px", color: "#444", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>Segment</div>
+            <div style={{ padding: "12px 16px", borderLeft: "1px solid #1a1a1a" }}>
+              {a ? (
+                <div>
+                  <div style={{ color: "#fff", fontWeight: 800, fontSize: 13 }}>{a.eventName || a.athlete}</div>
+                  <div style={{ color: "#555", fontSize: 11 }}>{a.date} · {a.athlete}</div>
+                </div>
+              ) : <span style={{ color: "#333" }}>—</span>}
+            </div>
+            <div style={{ padding: "12px 16px", borderLeft: "1px solid #1a1a1a" }}>
+              {b ? (
+                <div>
+                  <div style={{ color: "#fff", fontWeight: 800, fontSize: 13 }}>{b.eventName || b.athlete}</div>
+                  <div style={{ color: "#555", fontSize: 11 }}>{b.date} · {b.athlete}</div>
+                </div>
+              ) : <span style={{ color: "#333" }}>—</span>}
+            </div>
+          </div>
+
+          {/* Totaux */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", background: "#111", borderBottom: "2px solid #222" }}>
+            <div style={{ padding: "14px 16px", color: "#888", fontSize: 11, fontWeight: 700, textTransform: "uppercase" }}>Temps total</div>
+            <div style={{ padding: "14px 16px", borderLeft: "1px solid #222" }}>
+              <span style={{ ...diffStyle(a?.totalSecs, b?.totalSecs), fontSize: 20 }}>{a ? formatTime(a.totalSecs) : "—"}</span>
+            </div>
+            <div style={{ padding: "14px 16px", borderLeft: "1px solid #222" }}>
+              <span style={{ ...diffStyle(b?.totalSecs, a?.totalSecs), fontSize: 20 }}>{b ? formatTime(b.totalSecs) : "—"}</span>
+            </div>
+          </div>
+          <CompRow label="Run total" sA={a?.runSecs} sB={b?.runSecs} />
+          <CompRow label="Roxzone total" sA={a?.roxzoneSecs} sB={b?.roxzoneSecs} />
+
+          {/* Séparateur Runs */}
+          <div style={{ padding: "8px 16px", background: "#111", color: "#555", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+            Splits de run
+          </div>
+          {HYROX_RUNS.map((run, i) => (
+            <CompRow key={run} label={`Run ${i + 1}`}
+              sA={a?.runSecs_splits?.[run]}
+              sB={b?.runSecs_splits?.[run]}
+            />
+          ))}
+
+          {/* Séparateur Stations */}
+          <div style={{ padding: "8px 16px", background: "#111", color: "#555", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+            Stations
+          </div>
+          {HYROX_STATIONS.map((station, i) => (
+            <CompRow key={station} label={station}
+              sA={a?.stationSecs?.[station]}
+              sB={b?.stationSecs?.[station]}
+              highlight={i % 2 === 1}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── HYROX RECORDS ─────────────────────────────────────────────────────────────
 function HyroxRecords({ data }) {
   const col = SPORT_COLORS["Hyrox"];
@@ -996,6 +1140,7 @@ function HyroxRecords({ data }) {
                   <div style={{ color: "#555", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", fontWeight: 700, marginBottom: 4 }}>Meilleur temps</div>
                   <div style={{ color: col.main, fontWeight: 900, fontSize: 32 }}>{formatTime(pr.totalSecs)}</div>
                   <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4, flexWrap: "wrap" }}>
+                    {pr.eventName && <span style={{ color: "#fff", fontWeight: 700, fontSize: 13 }}>{pr.eventName}</span>}
                     <span style={{ color: "#444", fontSize: 12 }}>{pr.date}</span>
                     {pr.category && pr.category !== "Solo" && <Badge color="#555">{pr.category}</Badge>}
                   </div>
@@ -1134,7 +1279,7 @@ function HyroxTab({ data, setData, partners, setPartners }) {
       {/* Sub-tabs */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", gap: 4, background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 10, padding: 4 }}>
-          {["Historique", "Records"].map(t => (
+          {["Historique", "Records", "Comparaison"].map(t => (
             <button key={t} onClick={() => setSubTab(t)} style={{
               padding: "7px 18px",
               borderRadius: 7,
@@ -1152,9 +1297,9 @@ function HyroxTab({ data, setData, partners, setPartners }) {
         <button onClick={() => setSubTab("+")} style={{
           width: 36, height: 36,
           borderRadius: 10,
-          border: `1.5px solid ${subTab === "+" ? col.main : "#222"}`,
-          background: subTab === "+" ? col.main : "transparent",
-          color: subTab === "+" ? "#000" : "#555",
+          border: `1.5px solid ${subTab === "+" ? "#e53e3e" : "#333"}`,
+          background: subTab === "+" ? "#e53e3e" : "transparent",
+          color: subTab === "+" ? "#fff" : "#888",
           fontWeight: 900,
           fontSize: 20,
           lineHeight: 1,
@@ -1166,6 +1311,7 @@ function HyroxTab({ data, setData, partners, setPartners }) {
       </div>
 
       {subTab === "Records" && <HyroxRecords data={data} />}
+      {subTab === "Comparaison" && <HyroxComparison data={data} />}
 
       {subTab === "+" && (
         <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 16, padding: "20px 24px" }}>
@@ -1179,6 +1325,7 @@ function HyroxTab({ data, setData, partners, setPartners }) {
               <AthleteSelector value={form.athlete} onChange={v => update("athlete", v)} />
             </div>
             <Input label="Date" type="date" value={form.date} onChange={v => update("date", v)} />
+            <Input label="Ville / Événement" value={form.eventName || ""} onChange={v => update("eventName", v)} placeholder="ex: Paris, Lyon…" />
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <label style={{ color: "#666", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>Catégorie</label>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -1307,6 +1454,7 @@ function HyroxTab({ data, setData, partners, setPartners }) {
                     <Badge color={col.main}>{r.athlete}</Badge>
                     {r.category && r.category !== "Solo" && <Badge color="#555">{r.category}</Badge>}
                     {r.partner && <span style={{ color: "#555", fontSize: 12 }}>avec {r.partner}</span>}
+                    <span style={{ color: "#fff", fontWeight: 700, fontSize: 13 }}>{r.eventName || ""}</span>
                     <span style={{ color: "#555", fontSize: 12 }}>{r.date}</span>
                   </div>
                   {r.notes && <div style={{ color: "#555", fontSize: 12 }}>{r.notes}</div>}
@@ -1519,9 +1667,9 @@ function MusculationTab({ data, setData }) {
         <button onClick={() => setSubTab("+")} style={{
           width: 36, height: 36,
           borderRadius: 10,
-          border: `1.5px solid ${subTab === "+" ? col.main : "#222"}`,
-          background: subTab === "+" ? col.main : "transparent",
-          color: subTab === "+" ? "#000" : "#555",
+          border: `1.5px solid ${subTab === "+" ? "#e53e3e" : "#333"}`,
+          background: subTab === "+" ? "#e53e3e" : "transparent",
+          color: subTab === "+" ? "#fff" : "#888",
           fontWeight: 900,
           fontSize: 20,
           lineHeight: 1,
