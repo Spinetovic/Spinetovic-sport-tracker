@@ -30,6 +30,17 @@ const HYROX_STATIONS = [
   "1000m Rowing", "200m Farmers Carry", "100m Sandbag Lunges", "100 Wall Balls",
 ];
 
+const HYROX_RUNS = [
+  "Run 1 (avant SkiErg)",
+  "Run 2 (avant Sled Push)",
+  "Run 3 (avant Sled Pull)",
+  "Run 4 (avant Burpee BJ)",
+  "Run 5 (avant Rowing)",
+  "Run 6 (avant Farmers)",
+  "Run 7 (avant Sandbag)",
+  "Run 8 (avant Wall Ball)",
+];
+
 const RUNNING_DISTANCES = ["1km", "5km", "10km", "20km", "Semi-marathon", "Marathon", "Autre"];
 const RUNNING_PR_DISTANCES = ["1km", "5km", "10km", "20km", "Semi-marathon", "Marathon"];
 const DISTANCE_KM = { "1km": 1, "5km": 5, "10km": 10, "20km": 20, "Semi-marathon": 21.0975, "Marathon": 42.195 };
@@ -129,7 +140,7 @@ const DEFAULT_RACE_NAMES = [
 
 const defaultRunForm = { date: "", distance: "", time: "", pace: "", raceName: "", rankOverall: "", totalOverall: "", rankGender: "", totalGender: "", notes: "", athlete: "Tom" };
 const HYROX_CATEGORIES = ["Solo", "Double Mixte", "Double Hommes", "Double Femmes"];
-const defaultHyroxForm = { date: "", totalTime: "", runTime: "", roxzoneTime: "", category: "Solo", partner: "", stations: {}, notes: "", athlete: "Tom" };
+const defaultHyroxForm = { date: "", totalTime: "", runTime: "", roxzoneTime: "", category: "Solo", partner: "", stations: {}, runs: {}, notes: "", athlete: "Tom" };
 const defaultMuscuForm = { date: "", exercise: "", sets: "", reps: "", weight: "", notes: "", athlete: "Tom" };
 
 function formatTime(seconds) {
@@ -1072,29 +1083,43 @@ function HyroxTab({ data, setData, partners, setPartners }) {
 
   const update = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const updateStation = (s, v) => setForm(f => ({ ...f, stations: { ...f.stations, [s]: v } }));
+  const updateRun = (r, v) => setForm(f => ({ ...f, runs: { ...f.runs, [r]: v } }));
+
+  // Calcul auto du total run depuis les splits
+  const autoRunTotal = (() => {
+    const splits = HYROX_RUNS.map(r => parseTimeInput(form.runs[r])).filter(Boolean);
+    if (splits.length !== HYROX_RUNS.length) return null;
+    return splits.reduce((a, b) => a + b, 0);
+  })();
 
   const submit = () => {
     if (!form.date || !form.totalTime) return;
     const totalSecs = parseTimeInput(form.totalTime);
-    const runSecs = parseTimeInput(form.runTime);
     const roxzoneSecs = parseTimeInput(form.roxzoneTime);
     const stationSecs = {};
     Object.entries(form.stations).forEach(([k, v]) => { stationSecs[k] = parseTimeInput(v); });
+    const runSecs_splits = {};
+    Object.entries(form.runs || {}).forEach(([k, v]) => { runSecs_splits[k] = parseTimeInput(v); });
+    const runSecs = autoRunTotal ?? parseTimeInput(form.runTime);
+    const entry = { ...form, totalSecs, runSecs, roxzoneSecs, stationSecs, runSecs_splits, id: editingId || Date.now() };
     if (editingId) {
-      setData(d => d.map(r => r.id === editingId ? { ...form, totalSecs, runSecs, roxzoneSecs, stationSecs, id: editingId } : r));
+      setData(d => d.map(r => r.id === editingId ? entry : r));
       setEditingId(null);
     } else {
-      setData(d => [...d, { ...form, totalSecs, runSecs, roxzoneSecs, stationSecs, id: Date.now() }]);
+      setData(d => [...d, entry]);
     }
     setForm(defaultHyroxForm);
   };
 
   const secsToStr = (s) => s ? `${String(Math.floor(s/3600)).padStart(2,"0")}:${String(Math.floor((s%3600)/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}` : "";
+  const minsStr = (s) => s ? `${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}` : "";
 
   const startEdit = (r) => {
     const stationsStr = {};
-    if (r.stationSecs) Object.entries(r.stationSecs).forEach(([k, v]) => { stationsStr[k] = v ? `${String(Math.floor(v/60)).padStart(2,"0")}:${String(v%60).padStart(2,"0")}` : ""; });
-    setForm({ ...r, totalTime: secsToStr(r.totalSecs), runTime: secsToStr(r.runSecs), roxzoneTime: secsToStr(r.roxzoneSecs), stations: stationsStr });
+    if (r.stationSecs) Object.entries(r.stationSecs).forEach(([k, v]) => { stationsStr[k] = v ? minsStr(v) : ""; });
+    const runsStr = {};
+    if (r.runSecs_splits) Object.entries(r.runSecs_splits).forEach(([k, v]) => { runsStr[k] = v ? minsStr(v) : ""; });
+    setForm({ ...r, totalTime: secsToStr(r.totalSecs), runTime: secsToStr(r.runSecs), roxzoneTime: secsToStr(r.roxzoneSecs), stations: stationsStr, runs: runsStr });
     setEditingId(r.id);
     setSubTab("+");
   };
@@ -1169,7 +1194,17 @@ function HyroxTab({ data, setData, partners, setPartners }) {
               </div>
             </div>
             <Input label="Temps total" value={form.totalTime} onChange={v => update("totalTime", v)} placeholder="01:15:00" />
-            <Input label="Temps de run" value={form.runTime} onChange={v => update("runTime", v)} placeholder="00:35:00" />
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <label style={{ color: "#666", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>Temps de run total</label>
+              {autoRunTotal ? (
+                <div style={{ background: "#0d0d0d", border: `1px solid ${col.main}44`, borderRadius: 8, padding: "9px 12px", fontSize: 14, color: col.main, fontWeight: 700 }}>
+                  {secsToStr(autoRunTotal)} <span style={{ color: "#555", fontSize: 11, fontWeight: 400 }}>calculé depuis les splits</span>
+                </div>
+              ) : (
+                <input value={form.runTime} onChange={e => update("runTime", e.target.value)} placeholder="00:35:00"
+                  style={{ background: "#0d0d0d", border: "1px solid #222", borderRadius: 8, padding: "9px 12px", color: "#fff", fontSize: 14, outline: "none", fontFamily: "inherit" }} />
+              )}
+            </div>
             <Input label="Temps Roxzone" value={form.roxzoneTime} onChange={v => update("roxzoneTime", v)} placeholder="00:40:00" />
             {isDouble && (
               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -1225,6 +1260,22 @@ function HyroxTab({ data, setData, partners, setPartners }) {
               <Input key={s} label={s} value={form.stations[s] || ""} onChange={v => updateStation(s, v)} placeholder="mm:ss" />
             ))}
           </div>
+
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, marginTop: 4 }}>
+            <div style={{ color: "#666", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>
+              Splits de run (optionnel)
+            </div>
+            {autoRunTotal && (
+              <span style={{ color: col.main, fontSize: 11, fontWeight: 700 }}>
+                Total auto : {secsToStr(autoRunTotal)}
+              </span>
+            )}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 8, marginBottom: 16 }}>
+            {HYROX_RUNS.map(r => (
+              <Input key={r} label={r} value={form.runs[r] || ""} onChange={v => updateRun(r, v)} placeholder="mm:ss" />
+            ))}
+          </div>
           <Textarea label="Notes" value={form.notes} onChange={v => update("notes", v)} />
           <button onClick={submit} style={{
             marginTop: 16, background: col.main, color: "#000", border: "none",
@@ -1270,13 +1321,29 @@ function HyroxTab({ data, setData, partners, setPartners }) {
                 </div>
               </div>
               {r.stationSecs && Object.keys(r.stationSecs).length > 0 && (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
-                  {Object.entries(r.stationSecs).map(([s, t]) => t && (
-                    <div key={s} style={{ background: col.light, border: `1px solid ${col.border}`, borderRadius: 8, padding: "4px 10px", fontSize: 12 }}>
-                      <span style={{ color: "#666" }}>{s}: </span>
-                      <span style={{ color: col.main, fontWeight: 700 }}>{formatTime(t)}</span>
-                    </div>
-                  ))}
+                <div style={{ marginTop: 12 }}>
+                  <div style={{ color: "#444", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Stations</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {Object.entries(r.stationSecs).map(([s, t]) => t && (
+                      <div key={s} style={{ background: col.light, border: `1px solid ${col.border}`, borderRadius: 8, padding: "4px 10px", fontSize: 12 }}>
+                        <span style={{ color: "#666" }}>{s}: </span>
+                        <span style={{ color: col.main, fontWeight: 700 }}>{formatTime(t)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {r.runSecs_splits && Object.values(r.runSecs_splits).some(Boolean) && (
+                <div style={{ marginTop: 10 }}>
+                  <div style={{ color: "#444", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Splits de run</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {HYROX_RUNS.map((run, i) => r.runSecs_splits[run] && (
+                      <div key={run} style={{ background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: 8, padding: "4px 10px", fontSize: 12 }}>
+                        <span style={{ color: "#555" }}>R{i + 1}: </span>
+                        <span style={{ color: "#aaa", fontWeight: 700 }}>{formatTime(r.runSecs_splits[run])}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
