@@ -427,71 +427,97 @@ function RunningRecords({ data }) {
                 <div style={{ display: "flex", gap: 20 }}>
                   {ATHLETES.filter(a => byAthlete[a].length > 0).map(a => (
                     <div key={a} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <div style={{ width: 12, height: 12, borderRadius: "50%", background: ATHLETE_COLORS[a] }} />
+                      <div style={{ width: 10, height: 10, borderRadius: "50%", background: ATHLETE_COLORS[a] }} />
                       <span style={{ color: "#888", fontSize: 12, fontWeight: 600 }}>{a}</span>
                     </div>
                   ))}
                 </div>
 
-                {/* Timeline chart */}
-                <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 14, padding: "24px 20px 16px" }}>
-                  {/* Y-axis labels + chart area */}
-                  <div style={{ display: "flex", gap: 12 }}>
-                    {/* Y labels */}
-                    <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", paddingBottom: 28, width: 60 }}>
-                      {[maxSecs, (maxSecs + minSecs) / 2, minSecs].map(s => (
-                        <div key={s} style={{ color: "#444", fontSize: 10, textAlign: "right" }}>{formatTime(Math.round(s))}</div>
-                      ))}
-                    </div>
+                {/* Chart */}
+                {(() => {
+                  const PAD_L = 70, PAD_R = 20, PAD_T = 16, PAD_B = 36;
+                  const W = 800, H = 220;
+                  const chartW = W - PAD_L - PAD_R;
+                  const chartH = H - PAD_T - PAD_B;
 
-                    {/* Chart */}
-                    <div style={{ flex: 1, position: "relative" }}>
-                      {/* Grid lines */}
-                      <div style={{ position: "absolute", inset: 0, paddingBottom: 28 }}>
-                        {[0, 0.5, 1].map(t => (
-                          <div key={t} style={{ position: "absolute", left: 0, right: 0, top: `${t * 100}%`, borderTop: "1px solid #161616" }} />
+                  const allDates = [...new Set(runs.map(r => r.date))].sort();
+                  const minDate = new Date(allDates[0]).getTime();
+                  const maxDate = new Date(allDates[allDates.length - 1]).getTime();
+                  const dateSpan = maxDate - minDate || 1;
+
+                  const toX = (date) => PAD_L + ((new Date(date).getTime() - minDate) / dateSpan) * chartW;
+                  const toY = (secs) => PAD_T + ((maxSecs - secs) / range) * chartH;
+
+                  // Dates à afficher sur l'axe X (max 6)
+                  const xLabels = allDates.length <= 6 ? allDates : allDates.filter((_, i) => i % Math.ceil(allDates.length / 6) === 0 || i === allDates.length - 1);
+
+                  // Y labels (3 niveaux)
+                  const yLabels = [maxSecs, minSecs + (maxSecs - minSecs) / 2, minSecs];
+
+                  return (
+                    <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 14, padding: "8px 0 0", overflow: "hidden" }}>
+                      <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: "block" }}>
+                        {/* Grid lines horizontales */}
+                        {yLabels.map((s, i) => {
+                          const y = toY(s);
+                          return (
+                            <g key={i}>
+                              <line x1={PAD_L} y1={y} x2={W - PAD_R} y2={y} stroke="#1e1e1e" strokeWidth="1" />
+                              <text x={PAD_L - 8} y={y + 4} fill="#555" fontSize="11" textAnchor="end">{formatTime(Math.round(s))}</text>
+                            </g>
+                          );
+                        })}
+
+                        {/* Axe X */}
+                        <line x1={PAD_L} y1={H - PAD_B} x2={W - PAD_R} y2={H - PAD_B} stroke="#222" strokeWidth="1" />
+
+                        {/* Labels X */}
+                        {xLabels.map((d, i) => (
+                          <text key={d} x={toX(d)} y={H - PAD_B + 18} fill="#555" fontSize="11" textAnchor="middle">{d.slice(0, 7)}</text>
                         ))}
-                      </div>
 
-                      {/* Lines & dots per athlete */}
-                      {ATHLETES.filter(a => byAthlete[a].length > 0).map(a => {
-                        const aruns = byAthlete[a];
-                        const allDates = runs.map(r => r.date).sort();
-                        const minDate = allDates[0];
-                        const maxDate = allDates[allDates.length - 1];
-                        const dateRange = maxDate === minDate ? 1 : (new Date(maxDate) - new Date(minDate));
-                        const chartH = 160;
-                        const chartW = 100; // percent
+                        {/* Courbes et points par athlète */}
+                        {ATHLETES.filter(a => byAthlete[a].length > 0).map(a => {
+                          const pts = byAthlete[a].map(r => ({ x: toX(r.date), y: toY(r.secs), r }));
+                          const acol = ATHLETE_COLORS[a];
+                          const isPR = (r) => r.secs === Math.min(...byAthlete[a].map(x => x.secs));
 
-                        const points = aruns.map(r => {
-                          const x = dateRange === 1 ? 50 : ((new Date(r.date) - new Date(minDate)) / dateRange) * 100;
-                          const y = maxSecs === minSecs ? 50 : ((maxSecs - r.secs) / range) * 100;
-                          return { x, y, r };
-                        });
-
-                        const pathD = points.length > 1
-                          ? points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x}% ${100 - p.y}%`).join(" ")
-                          : null;
-
-                        return (
-                          <svg key={a} style={{ position: "absolute", left: 0, top: 0, width: "100%", height: "calc(100% - 28px)", overflow: "visible" }} viewBox="0 0 100 100" preserveAspectRatio="none">
-                            {pathD && <path d={pathD} fill="none" stroke={ATHLETE_COLORS[a]} strokeWidth="0.8" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />}
-                            {points.map((p, i) => (
-                              <circle key={i} cx={`${p.x}%`} cy={`${100 - p.y}%`} r="4" fill={ATHLETE_COLORS[a]} stroke="#060606" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
-                            ))}
-                          </svg>
-                        );
-                      })}
-
-                      {/* X-axis dates */}
-                      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, paddingTop: 4, borderTop: "1px solid #161616", height: 28 }}>
-                        {[...new Set(runs.map(r => r.date))].sort().map(d => (
-                          <div key={d} style={{ color: "#444", fontSize: 10, textAlign: "center" }}>{d.slice(0, 7)}</div>
-                        ))}
-                      </div>
+                          return (
+                            <g key={a}>
+                              {/* Ligne */}
+                              {pts.length > 1 && (
+                                <polyline
+                                  points={pts.map(p => `${p.x},${p.y}`).join(" ")}
+                                  fill="none"
+                                  stroke={acol}
+                                  strokeWidth="2.5"
+                                  strokeLinejoin="round"
+                                  strokeLinecap="round"
+                                  opacity="0.9"
+                                />
+                              )}
+                              {/* Points */}
+                              {pts.map((p, i) => {
+                                const pr = isPR(p.r);
+                                return (
+                                  <g key={i}>
+                                    {pr && <circle cx={p.x} cy={p.y} r="10" fill={acol} opacity="0.15" />}
+                                    <circle cx={p.x} cy={p.y} r={pr ? 6 : 5} fill={acol} stroke="#0a0a0a" strokeWidth="2" />
+                                    {pr && <text x={p.x} y={p.y - 14} fill={acol} fontSize="10" textAnchor="middle" fontWeight="700">★PR</text>}
+                                    {/* Tooltip temps */}
+                                    <text x={p.x} y={p.y + (p.y < PAD_T + 30 ? 20 : -14)} fill={acol} fontSize="10" textAnchor="middle" opacity="0.8">
+                                      {pr ? "" : formatTime(p.r.secs)}
+                                    </text>
+                                  </g>
+                                );
+                              })}
+                            </g>
+                          );
+                        })}
+                      </svg>
                     </div>
-                  </div>
-                </div>
+                  );
+                })()}
 
                 {/* Data table */}
                 <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "auto" }}>
