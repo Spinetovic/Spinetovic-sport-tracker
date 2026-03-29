@@ -286,6 +286,7 @@ function RunningRecords({ data }) {
   const col = SPORT_COLORS["Course à pied"];
   const [view, setView] = useState("PRs"); // "PRs" | "Progression"
   const [selectedRace, setSelectedRace] = useState("");
+  const [selectedRaceNames, setSelectedRaceNames] = useState(null);
 
   const getPR = (athlete, distance) => {
     const runs = data.filter(r => r.athlete === athlete && r.distance === distance && r.secs);
@@ -386,7 +387,7 @@ function RunningRecords({ data }) {
             <label style={{ color: "#666", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>Course ou distance</label>
             <select
               value={selectedRace}
-              onChange={e => setSelectedRace(e.target.value)}
+              onChange={e => { setSelectedRace(e.target.value); setSelectedRaceNames(null); }}
               style={{
                 background: "#0d0d0d", border: "1px solid #222", borderRadius: 8,
                 padding: "10px 14px", color: selectedRace ? "#fff" : "#555", fontSize: 14,
@@ -409,10 +410,35 @@ function RunningRecords({ data }) {
           </div>
 
           {selectedRace && (() => {
-            const runs = getProgressionRuns(selectedRace);
-            if (!runs.length) return <div style={{ color: "#333", textAlign: "center", padding: 40 }}>Aucune donnée pour cette sélection.</div>;
+            const allRuns = getProgressionRuns(selectedRace);
+            if (!allRuns.length) return <div style={{ color: "#333", textAlign: "center", padding: 40 }}>Aucune donnée pour cette sélection.</div>;
+
+            // Noms de courses disponibles dans cette sélection (si vue par distance)
+            const availableRaceNames = [...new Set(allRuns.filter(r => r.raceName).map(r => r.raceName))];
+            const isDistanceView = RUNNING_PR_DISTANCES.includes(selectedRace);
+            const activeNames = selectedRaceNames ?? availableRaceNames;
+
+            // Filtrer les runs selon les courses sélectionnées
+            const runs = isDistanceView && availableRaceNames.length > 1
+              ? allRuns.filter(r => !r.raceName || activeNames.includes(r.raceName))
+              : allRuns;
+
+            const toggleRaceName = (name) => {
+              const current = selectedRaceNames ?? availableRaceNames;
+              if (current.includes(name)) {
+                if (current.length === 1) return; // garder au moins 1
+                setSelectedRaceNames(current.filter(n => n !== name));
+              } else {
+                setSelectedRaceNames([...current, name]);
+              }
+            };
 
             const allSecs = runs.map(r => r.secs);
+            if (!runs.length) return (
+              <div style={{ color: "#444", textAlign: "center", padding: 40, fontSize: 13 }}>
+                Aucune sortie pour cette sélection de courses.
+              </div>
+            );
             const minSecs = Math.min(...allSecs);
             const maxSecs = Math.max(...allSecs);
             const range = maxSecs - minSecs || 1;
@@ -423,7 +449,35 @@ function RunningRecords({ data }) {
 
             return (
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                {/* Legend */}
+
+                {/* Filtre par nom de course (si vue par distance avec plusieurs courses) */}
+                {isDistanceView && availableRaceNames.length > 1 && (
+                  <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 12, padding: "12px 16px" }}>
+                    <div style={{ color: "#555", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Filtrer par course</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                      {availableRaceNames.map(name => {
+                        const isActive = activeNames.includes(name);
+                        return (
+                          <button key={name} onClick={() => toggleRaceName(name)} style={{
+                            padding: "5px 14px", borderRadius: 999,
+                            border: `1.5px solid ${isActive ? col.main : "#222"}`,
+                            background: isActive ? col.main + "22" : "transparent",
+                            color: isActive ? col.main : "#555",
+                            fontWeight: 700, fontSize: 12, cursor: "pointer",
+                            fontFamily: "inherit", transition: "all 0.15s",
+                          }}>
+                            {isActive ? "✓ " : ""}{name}
+                          </button>
+                        );
+                      })}
+                      <button onClick={() => setSelectedRaceNames(availableRaceNames)} style={{
+                        padding: "5px 14px", borderRadius: 999, border: "1px solid #1a1a1a",
+                        background: "transparent", color: "#333", fontWeight: 600, fontSize: 11,
+                        cursor: "pointer", fontFamily: "inherit",
+                      }}>Tout sélectionner</button>
+                    </div>
+                  </div>
+                )}
                 <div style={{ display: "flex", gap: 20 }}>
                   {ATHLETES.filter(a => byAthlete[a].length > 0).map(a => (
                     <div key={a} style={{ display: "flex", alignItems: "center", gap: 6 }}>
