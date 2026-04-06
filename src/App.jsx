@@ -1,15 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 
-function useIsMobile() {
-  const [mobile, setMobile] = useState(window.innerWidth < 640);
-  useEffect(() => {
-    const handler = () => setMobile(window.innerWidth < 640);
-    window.addEventListener("resize", handler);
-    return () => window.removeEventListener("resize", handler);
-  }, []);
-  return mobile;
-}
-
 const ATHLETES = ["Tom", "Camille"];
 
 const SPORT_ICONS = {
@@ -119,16 +109,6 @@ function ActionButtons({ onEdit, onDelete, accentColor }) {
     </div>
   );
 }
-
-const EXERCISES = {
-  "Compound": ["Squat", "Deadlift", "Bench Press", "Overhead Press", "Barbell Row", "Hip Thrust", "Romanian Deadlift", "Front Squat", "Sumo Deadlift"],
-  "Haltères": ["Dumbbell Press", "Dumbbell Row", "Goblet Squat", "Lunges", "Split Squat", "Shoulder Press", "Curl biceps", "Triceps kickback"],
-  "Tirage": ["Tractions", "Lat Pulldown", "Tirage horizontal", "Face Pull", "Tirage nuque"],
-  "Cardio / Fonctionnel": ["Kettlebell Swing", "Box Jump", "Burpees", "Wall Ball", "Farmers Carry", "Sandbag Carry", "Sled Push", "Sled Pull"],
-  "Isolation": ["Curl biceps barre", "Extension triceps", "Leg Curl", "Leg Extension", "Calf Raises", "Lateral Raise"],
-  "Gainage / Core": ["Planche", "Crunch", "Russian Twist", "Ab Wheel", "Dead Bug", "Pallof Press"],
-  "Autre": ["Autre (personnalisé)"],
-};
 
 const DEFAULT_RACE_NAMES = [
   "Cross de Sceaux",
@@ -1506,7 +1486,6 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
 
 // ── KARTING TAB ───────────────────────────────────────────────────────────────
 const KARTING_SESSIONS = ["Qualifications", "Course 1", "Course 2", "Course 3", "Course 4"];
-const KARTING_FORMATS = ["Sprint"];
 const defaultKartForm = { date: "", circuit: "RKO Angerville", format: "Sprint", session: "", athlete: "Tom", group: "", rank: "", total: "", bestLap: "", notes: "" };
 
 function KartingTab({ data, setData }) {
@@ -2176,7 +2155,6 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates }) {
             const allSecs = progressionData.map(r => parseTimeInput(r.totalTime)).filter(Boolean);
             const minS = Math.min(...allSecs), maxS = Math.max(...allSecs), range = maxS - minS || 1;
             const PAD_L = 70, PAD_R = 20, PAD_T = 16, PAD_B = 36, W = 800, H = 200;
-            const cW = W - PAD_L - PAD_R, cH = H - PAD_T - PAD_B;
             const tpl = templates.find(t => t.id === compareTemplate);
             const byAthlete = {};
             ATHLETES.forEach(a => { byAthlete[a] = progressionData.filter(r => r.athlete === a); });
@@ -2245,7 +2223,6 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates }) {
                     const diff = prevSecs ? secs - prevSecs : null;
                     const isPR = secs === Math.min(...progressionData.filter(x => x.athlete === r.athlete).map(x => parseTimeInput(x.totalTime)).filter(Boolean));
                     const acol = ATHLETE_COLORS[r.athlete];
-                    const colCount = 4 + (tpl?.segments.length || 0);
                     return (
                       <div key={r.id} style={{ minWidth: 400, display: "grid", gridTemplateColumns: `100px 80px 90px 80px${tpl ? tpl.segments.map(() => " 90px").join("") : ""}`, borderBottom: i < progressionData.length-1 ? "1px solid #111" : "none", background: i%2===0 ? "#0a0a0a" : "#0d0d0d" }}>
                         <div style={{ padding: "10px 12px", color: "#777", fontSize: 12 }}>{r.date}{isPR && <span style={{ marginLeft: 6, color: col.main, fontSize: 9, fontWeight: 800 }}>★PR</span>}</div>
