@@ -1971,7 +1971,7 @@ function BodyTab({ data, setData }) {
 
 // ── HYROX TRAINING TAB ────────────────────────────────────────────────────────
 const HYROX_STATION_BASES = ["SkiErg", "Sled Push", "Sled Pull", "Burpee Broad Jump", "Rowing", "Farmers Carry", "Sandbag Lunges", "Wall Balls", "Run"];
-const defaultTrainingForm = { date: "", athlete: "Tom", templateId: "", totalTime: "", notes: "", segments: {} };
+const defaultTrainingForm = { date: "", athlete: "Tom", templateId: "", totalTime: "", isShared: false, trainingPartner: "", notes: "", segments: {} };
 
 function HyroxTrainingTab({ data, setData, templates, setTemplates }) {
   const [subTab, setSubTab] = useState("Historique");
@@ -1990,9 +1990,27 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates }) {
 
   const submit = () => {
     if (!form.date || !form.templateId) return;
-    const entry = { ...form, id: editingId || Date.now() };
-    if (editingId) { setData(d => d.map(r => r.id === editingId ? entry : r)); setEditingId(null); }
-    else setData(d => [...d, entry]);
+    if (editingId) {
+      setData(d => d.map(r => r.id === editingId ? { ...form, id: editingId } : r));
+      setEditingId(null);
+    } else {
+      const sharedId = Date.now();
+      const entryA = { ...form, id: sharedId };
+      if (form.isShared && form.trainingPartner) {
+        // Créer une entrée miroir pour le partenaire
+        const entryB = {
+          ...form,
+          id: sharedId + 1,
+          athlete: form.trainingPartner,
+          trainingPartner: form.athlete,
+          sharedId,
+        };
+        entryA.sharedId = sharedId;
+        setData(d => [...d, entryA, entryB]);
+      } else {
+        setData(d => [...d, entryA]);
+      }
+    }
     setForm(defaultTrainingForm);
     setSubTab("Historique");
   };
@@ -2062,6 +2080,28 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates }) {
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <label style={{ color: "#666", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>Temps total</label>
               <input value={form.totalTime} onChange={e => update("totalTime", e.target.value)} placeholder="mm:ss" style={inputStyle} />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <label style={{ color: "#666", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>Type</label>
+              <div style={{ display: "flex", gap: 8 }}>
+                {["Solo", "Partagé"].map(t => (
+                  <button key={t} onClick={() => update("isShared", t === "Partagé")} style={{
+                    padding: "7px 16px", borderRadius: 8, fontFamily: "inherit", cursor: "pointer", fontWeight: 700, fontSize: 12,
+                    border: `1.5px solid ${(t === "Partagé") === form.isShared ? col.main : "#222"}`,
+                    background: (t === "Partagé") === form.isShared ? col.main + "22" : "transparent",
+                    color: (t === "Partagé") === form.isShared ? col.main : "#555",
+                  }}>{t}</button>
+                ))}
+              </div>
+              {form.isShared && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  <label style={{ color: "#555", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>Partenaire</label>
+                  <select value={form.trainingPartner} onChange={e => update("trainingPartner", e.target.value)} style={inputStyle}>
+                    <option value="">Choisir…</option>
+                    {ATHLETES.filter(a => a !== form.athlete).map(a => <option key={a} value={a}>{a}</option>)}
+                  </select>
+                </div>
+              )}
             </div>
           </div>
 
@@ -2260,6 +2300,7 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates }) {
                     <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 4 }}>
                       <Badge color={col.main}>{r.athlete}</Badge>
                       <span style={{ color: "#fff", fontWeight: 700 }}>{tpl?.name || "—"}</span>
+                      {r.trainingPartner && <span style={{ color: "#555", fontSize: 12 }}>avec {r.trainingPartner}</span>}
                       <span style={{ color: "#555", fontSize: 12 }}>{r.date}</span>
                     </div>
                     {r.notes && <div style={{ color: "#555", fontSize: 12 }}>{r.notes}</div>}
