@@ -1512,9 +1512,12 @@ function KartingTab({ data, setData }) {
   const submitBulk = () => {
     const date = bulkForms[0].date;
     if (!date) return;
-    const entries = bulkForms.filter(f => f.rank || f.bestLap).map(f => ({ ...f, id: Date.now() + Math.random() }));
+    const entries = bulkForms
+      .filter(f => f.rank || f.bestLap)
+      .map((f, i) => ({ ...f, id: Date.now() + i }));
     setData(d => [...d, ...entries]);
     setBulkForms(KARTING_SESSIONS.map(s => ({ ...defaultKartForm, session: s })));
+    setBulkMode(false);
     setSubTab("Historique");
   };
 
@@ -1533,7 +1536,7 @@ function KartingTab({ data, setData }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", gap: 4, background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 10, padding: 4 }}>
-          {["Historique", "Records"].map(t => (
+          {["Historique", "Records", "Circuit"].map(t => (
             <button key={t} onClick={() => setSubTab(t)} style={{ padding: "7px 18px", borderRadius: 7, border: "none", background: subTab === t ? col.main : "transparent", color: subTab === t ? "#000" : "#555", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}>{t}</button>
           ))}
         </div>
@@ -1567,12 +1570,99 @@ function KartingTab({ data, setData }) {
                             <div>
                               <div style={{ color: col.main, fontWeight: 800, fontSize: 18 }}>P{best.rank}<span style={{ color: "#555", fontWeight: 400, fontSize: 12 }}>/{best.total}</span></div>
                               {pct && <div style={{ color: col.main, fontSize: 11, fontWeight: 700 }}>top {pct}%</div>}
-                              {best.bestLap && <div style={{ color: "#555", fontSize: 11, marginTop: 2 }}>Meilleur tour : {best.bestLap}</div>}
+                              {best.bestLap && <div style={{ color: "#555", fontSize: 11, marginTop: 2 }}>🕐 {best.bestLap}</div>}
                             </div>
                           ) : <span style={{ color: "#2a2a2a" }}>—</span>}
                         </div>
                       );
                     })}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
+      {subTab === "Circuit" && (() => {
+        const allLaps = data
+          .filter(r => r.bestLap)
+          .sort((a, b) => a.bestLap.localeCompare(b.bestLap));
+        const top10 = allLaps.slice(0, 10);
+        const allRaces = [...data].filter(r => r.rank).sort((a, b) => b.date?.localeCompare(a.date));
+        const allDates = [...new Set(allRaces.map(r => r.date))];
+        return (
+          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+            <div style={{ background: "#0a0a0a", border: `1px solid ${col.border}`, borderRadius: 14, overflow: "hidden" }}>
+              <div style={{ padding: "14px 20px", borderBottom: "1px solid #1a1a1a", display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 18 }}>🏆</span>
+                <span style={{ color: "#fff", fontWeight: 800, fontSize: 14 }}>Top 10 — Meilleurs tours</span>
+                <span style={{ color: "#555", fontSize: 12 }}>RKO Angerville</span>
+              </div>
+              {allLaps.length === 0 ? (
+                <div style={{ color: "#333", textAlign: "center", padding: 32, fontSize: 13 }}>Aucun temps enregistré</div>
+              ) : (
+                <div>
+                  <div style={{ display: "grid", gridTemplateColumns: "40px 1fr 110px 130px 110px", background: "#0d0d0d", borderBottom: "1px solid #1a1a1a" }}>
+                    {["#", "Athlète", "Temps", "Session", "Date"].map(h => (
+                      <div key={h} style={{ padding: "10px 14px", color: "#444", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</div>
+                    ))}
+                  </div>
+                  {top10.map((r, i) => {
+                    const rankColor = i === 0 ? "#FFD700" : i === 1 ? "#C0C0C0" : i === 2 ? "#CD7F32" : "#555";
+                    return (
+                      <div key={r.id} style={{ display: "grid", gridTemplateColumns: "40px 1fr 110px 130px 110px", borderBottom: i < top10.length - 1 ? "1px solid #111" : "none", background: i % 2 === 0 ? "#0a0a0a" : "#0d0d0d" }}>
+                        <div style={{ padding: "12px 14px", color: rankColor, fontWeight: 800, fontSize: 14 }}>{i + 1}</div>
+                        <div style={{ padding: "12px 14px" }}><Badge color={col.main}>{r.athlete}</Badge></div>
+                        <div style={{ padding: "12px 14px", color: i === 0 ? col.main : "#fff", fontWeight: i === 0 ? 800 : 600, fontSize: 14, fontFamily: "monospace" }}>
+                          {r.bestLap}{i === 0 && <span style={{ marginLeft: 6, fontSize: 10 }}>★</span>}
+                        </div>
+                        <div style={{ padding: "12px 14px", color: "#666", fontSize: 12 }}>{r.session}</div>
+                        <div style={{ padding: "12px 14px", color: "#555", fontSize: 12 }}>{r.date}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            <div>
+              <div style={{ color: "#fff", fontWeight: 800, fontSize: 14, marginBottom: 14 }}>Toutes les courses</div>
+              {allDates.length === 0 ? (
+                <div style={{ color: "#333", textAlign: "center", padding: 32, fontSize: 13 }}>Aucune course enregistrée</div>
+              ) : allDates.map(date => {
+                const dayRaces = allRaces.filter(r => r.date === date);
+                return (
+                  <div key={date} style={{ marginBottom: 16 }}>
+                    <div style={{ color: "#555", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{date}</div>
+                    <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 12, overflow: "auto" }}>
+                      <div style={{ minWidth: 450, display: "grid", gridTemplateColumns: "1fr 70px 130px 120px 100px", background: "#0d0d0d", borderBottom: "1px solid #1a1a1a" }}>
+                        {["Session", "Groupe", "Place", "Meilleur tour", "Athlète"].map(h => (
+                          <div key={h} style={{ padding: "9px 14px", color: "#444", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</div>
+                        ))}
+                      </div>
+                      {KARTING_SESSIONS.map(sess => {
+                        const sessRaces = dayRaces.filter(r => r.session === sess);
+                        if (!sessRaces.length) return null;
+                        return sessRaces.map((r, ri) => {
+                          const pct = calcPct(r.rank, r.total);
+                          return (
+                            <div key={r.id} style={{ minWidth: 450, display: "grid", gridTemplateColumns: "1fr 70px 130px 120px 100px", borderBottom: "1px solid #111", background: ri % 2 === 0 ? "#0a0a0a" : "#0d0d0d" }}>
+                              <div style={{ padding: "10px 14px", color: "#888", fontWeight: 600, fontSize: 13 }}>{sess}</div>
+                              <div style={{ padding: "10px 14px", color: "#555", fontSize: 12 }}>{r.group ? `G${r.group}` : "—"}</div>
+                              <div style={{ padding: "10px 14px" }}>
+                                {r.rank ? <div>
+                                  <span style={{ color: col.main, fontWeight: 800, fontSize: 15 }}>P{r.rank}</span>
+                                  {r.total && <span style={{ color: "#444", fontSize: 12 }}>/{r.total}</span>}
+                                  {pct && <div style={{ color: col.main, fontSize: 10, fontWeight: 700 }}>top {pct}%</div>}
+                                </div> : <span style={{ color: "#333" }}>—</span>}
+                              </div>
+                              <div style={{ padding: "10px 14px", color: "#888", fontSize: 13, fontFamily: "monospace" }}>{r.bestLap || "—"}</div>
+                              <div style={{ padding: "10px 14px" }}><Badge color={col.main}>{r.athlete}</Badge></div>
+                            </div>
+                          );
+                        });
+                      })}
+                    </div>
                   </div>
                 );
               })}
@@ -1627,7 +1717,7 @@ function KartingTab({ data, setData }) {
                       </div>
                       <div>
                         <label style={{ color: "#555", fontSize: 10, fontWeight: 600, textTransform: "uppercase", display: "block", marginBottom: 4 }}>Meilleur tour</label>
-                        <input value={bulkForms[i].bestLap} onChange={e => setBulkForms(f => f.map((x, j) => j === i ? { ...x, bestLap: e.target.value } : x))} placeholder="mm:ss" style={{ ...inputStyle, padding: "7px 8px", fontSize: 13 }} />
+                        <input value={bulkForms[i].bestLap} onChange={e => setBulkForms(f => f.map((x, j) => j === i ? { ...x, bestLap: e.target.value } : x))} placeholder="mm:ss.000" style={{ ...inputStyle, padding: "7px 8px", fontSize: 13 }} />
                       </div>
                     </div>
                   </div>
@@ -1668,7 +1758,8 @@ function KartingTab({ data, setData }) {
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   <label style={{ color: "#666", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>Meilleur tour</label>
-                  <input value={form.bestLap} onChange={e => update("bestLap", e.target.value)} placeholder="mm:ss.ms" style={inputStyle} />
+                  <input value={form.bestLap} onChange={e => update("bestLap", e.target.value)} placeholder="mm:ss.000" style={inputStyle} />
+                  <span style={{ color: "#444", fontSize: 10 }}>ex: 01:23.456</span>
                 </div>
               </div>
               {form.rank && form.total && <div style={{ color: col.main, fontWeight: 700, fontSize: 13 }}>→ Top {calcPct(form.rank, form.total)}%</div>}
