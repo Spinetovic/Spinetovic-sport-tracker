@@ -32,9 +32,9 @@ const HYROX_RUNS = [
   "Run 8 (avant Wall Ball)",
 ];
 
-const RUNNING_DISTANCES = ["1km", "5km", "10km", "20km", "Semi-marathon", "Marathon", "Autre"];
-const RUNNING_PR_DISTANCES = ["1km", "5km", "10km", "20km", "Semi-marathon", "Marathon"];
-const DISTANCE_KM = { "1km": 1, "5km": 5, "10km": 10, "20km": 20, "Semi-marathon": 21.0975, "Marathon": 42.195 };
+const RUNNING_DISTANCES = ["5km", "10km", "20km", "Semi-marathon", "Marathon", "Autre"];
+const RUNNING_PR_DISTANCES = ["5km", "10km", "20km", "Semi-marathon", "Marathon"];
+const DISTANCE_KM = { "5km": 5, "10km": 10, "20km": 20, "Semi-marathon": 21.0975, "Marathon": 42.195 };
 
 function calcPace(distanceLabel, timeStr) {
   const km = DISTANCE_KM[distanceLabel];
