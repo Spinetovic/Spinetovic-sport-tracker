@@ -1688,7 +1688,7 @@ function KartingTab({ data, setData }) {
           {bulkMode ? (
             // Saisie en bloc pour un Sprint complet
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 8 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 8 }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   <label style={{ color: "#666", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>Date</label>
                   <input type="date" value={bulkForms[0].date} onChange={e => setBulkForms(f => f.map(x => ({ ...x, date: e.target.value })))} style={inputStyle} />
@@ -1697,16 +1697,16 @@ function KartingTab({ data, setData }) {
                   <label style={{ color: "#666", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>Athlète</label>
                   <AthleteSelector value={bulkForms[0].athlete} onChange={v => setBulkForms(f => f.map(x => ({ ...x, athlete: v })))} />
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ color: "#666", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>Groupe</label>
-                  <input type="number" min="1" value={bulkForms[0].group} onChange={e => setBulkForms(f => f.map(x => ({ ...x, group: e.target.value })))} placeholder="ex: 1" style={inputStyle} />
-                </div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr", gap: 10 }}>
                 {KARTING_SESSIONS.map((sess, i) => (
                   <div key={sess} style={{ background: "#060606", border: "1px solid #1a1a1a", borderRadius: 10, padding: "12px" }}>
                     <div style={{ color: col.main, fontWeight: 700, fontSize: 12, marginBottom: 10 }}>{sess}</div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div>
+                        <label style={{ color: "#555", fontSize: 10, fontWeight: 600, textTransform: "uppercase", display: "block", marginBottom: 4 }}>Groupe</label>
+                        <input type="number" min="1" value={bulkForms[i].group} onChange={e => setBulkForms(f => f.map((x, j) => j === i ? { ...x, group: e.target.value } : x))} placeholder="1" style={{ ...inputStyle, padding: "7px 8px", fontSize: 13 }} />
+                      </div>
                       <div>
                         <label style={{ color: "#555", fontSize: 10, fontWeight: 600, textTransform: "uppercase", display: "block", marginBottom: 4 }}>Place</label>
                         <input type="number" min="1" value={bulkForms[i].rank} onChange={e => setBulkForms(f => f.map((x, j) => j === i ? { ...x, rank: e.target.value } : x))} placeholder="P" style={{ ...inputStyle, padding: "7px 8px", fontSize: 13 }} />
@@ -1784,31 +1784,44 @@ function KartingTab({ data, setData }) {
             <div style={{ color: "#333", textAlign: "center", padding: 40 }}>Aucun résultat enregistré</div>
           ) : groupedDates.map(date => {
             const dayEntries = sorted.filter(r => r.date === date);
+            const athletes = [...new Set(dayEntries.map(r => r.athlete))];
             return (
-              <div key={date} style={{ marginBottom: 16 }}>
-                <div style={{ color: "#555", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{date} · {dayEntries[0]?.circuit || "RKO Angerville"}</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 8 }}>
-                  {dayEntries.map(r => {
+              <div key={date} style={{ marginBottom: 16, background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "hidden" }}>
+                {/* En-tête de journée */}
+                <div style={{ padding: "12px 18px", borderBottom: "1px solid #1a1a1a", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#0d0d0d" }}>
+                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                    <span style={{ color: "#fff", fontWeight: 800, fontSize: 14 }}>{date}</span>
+                    <span style={{ color: "#555", fontSize: 12 }}>{dayEntries[0]?.circuit || "RKO Angerville"}</span>
+                    {athletes.map(a => <Badge key={a} color={col.main}>{a}</Badge>)}
+                  </div>
+                </div>
+                {/* Lignes par session */}
+                {KARTING_SESSIONS.map(sess => {
+                  const sessEntries = dayEntries.filter(r => r.session === sess);
+                  if (!sessEntries.length) return null;
+                  return sessEntries.map(r => {
                     const pct = calcPct(r.rank, r.total);
                     return (
-                      <div key={r.id} style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 12, padding: "12px 14px" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                          <div>
-                            <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
-                              <Badge color={col.main}>{r.athlete}</Badge>
-                              <span style={{ color: "#777", fontSize: 12 }}>{r.session}</span>
-                              {r.group && <span style={{ color: "#555", fontSize: 12 }}>Groupe {r.group}</span>}
-                            </div>
-                            {r.rank && <div style={{ color: col.main, fontWeight: 800, fontSize: 22 }}>P{r.rank}{r.total && <span style={{ color: "#444", fontWeight: 400, fontSize: 13 }}>/{r.total}</span>}</div>}
-                            {pct && <div style={{ color: col.main, fontSize: 11, fontWeight: 700 }}>top {pct}%</div>}
-                            {r.bestLap && <div style={{ color: "#555", fontSize: 11, marginTop: 4 }}>Tour : {r.bestLap}</div>}
+                      <div key={r.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 18px", borderBottom: "1px solid #111" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 16, flex: 1 }}>
+                          {/* Session */}
+                          <div style={{ color: "#666", fontSize: 12, width: 110, flexShrink: 0 }}>{r.session}</div>
+                          {/* Groupe */}
+                          <div style={{ color: "#555", fontSize: 12, width: 60, flexShrink: 0 }}>{r.group ? `Gr. ${r.group}` : ""}</div>
+                          {/* Place */}
+                          <div style={{ width: 100, flexShrink: 0 }}>
+                            {r.rank && <span style={{ color: col.main, fontWeight: 800, fontSize: 18 }}>P{r.rank}<span style={{ color: "#444", fontWeight: 400, fontSize: 12 }}>{r.total ? `/${r.total}` : ""}</span></span>}
+                            {pct && <div style={{ color: col.main, fontSize: 10, fontWeight: 700 }}>top {pct}%</div>}
                           </div>
-                          <ActionButtons accentColor={col.main} onEdit={() => startEdit(r)} onDelete={() => deleteEntry(r.id)} />
+                          {/* Meilleur tour */}
+                          <div style={{ color: "#888", fontSize: 13, fontFamily: "monospace" }}>{r.bestLap || "—"}</div>
                         </div>
+                        {/* Actions */}
+                        <ActionButtons accentColor={col.main} onEdit={() => startEdit(r)} onDelete={() => deleteEntry(r.id)} />
                       </div>
                     );
-                  })}
-                </div>
+                  });
+                })}
               </div>
             );
           })}
