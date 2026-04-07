@@ -1536,53 +1536,13 @@ function KartingTab({ data, setData }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", gap: 4, background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 10, padding: 4 }}>
-          {["Historique", "Records", "Circuit"].map(t => (
+          {["Historique", "Circuit"].map(t => (
             <button key={t} onClick={() => setSubTab(t)} style={{ padding: "7px 18px", borderRadius: 7, border: "none", background: subTab === t ? col.main : "transparent", color: subTab === t ? "#000" : "#555", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}>{t}</button>
           ))}
         </div>
         <button onClick={() => { setSubTab("+"); setBulkMode(false); }} style={{ width: 36, height: 36, borderRadius: 10, border: `1.5px solid ${subTab === "+" ? "#e53e3e" : "#333"}`, background: subTab === "+" ? "#e53e3e" : "transparent", color: subTab === "+" ? "#fff" : "#888", fontWeight: 900, fontSize: 20, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
       </div>
 
-      {subTab === "Records" && (() => {
-        const getBest = (athlete, session) => {
-          const entries = data.filter(r => r.athlete === athlete && r.session === session && r.rank && r.total);
-          if (!entries.length) return null;
-          return entries.reduce((b, r) => parseInt(r.rank) < parseInt(b.rank) ? r : b);
-        };
-        return (
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ color: "#555", fontSize: 13 }}>Meilleur résultat par session.</div>
-            <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "auto" }}>
-              <div style={{ minWidth: 400, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", background: "#0d0d0d", borderBottom: "1px solid #1a1a1a" }}>
-                {["Session", ...ATHLETES].map(h => <div key={h} style={{ padding: "10px 16px", color: "#444", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", borderLeft: h !== "Session" ? "1px solid #1a1a1a" : "none" }}>{h}</div>)}
-              </div>
-              {KARTING_SESSIONS.map((sess, i) => {
-                const rowBg = i % 2 === 0 ? "#0a0a0a" : "#0d0d0d";
-                return (
-                  <div key={sess} style={{ minWidth: 400, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderBottom: i < KARTING_SESSIONS.length - 1 ? "1px solid #111" : "none" }}>
-                    <div style={{ padding: "12px 16px", background: rowBg, color: "#888", fontWeight: 700, fontSize: 13 }}>{sess}</div>
-                    {ATHLETES.map(a => {
-                      const best = getBest(a, sess);
-                      const pct = best ? calcPct(best.rank, best.total) : null;
-                      return (
-                        <div key={a} style={{ padding: "12px 16px", background: rowBg, borderLeft: "1px solid #161616" }}>
-                          {best ? (
-                            <div>
-                              <div style={{ color: col.main, fontWeight: 800, fontSize: 18 }}>P{best.rank}<span style={{ color: "#555", fontWeight: 400, fontSize: 12 }}>/{best.total}</span></div>
-                              {pct && <div style={{ color: col.main, fontSize: 11, fontWeight: 700 }}>top {pct}%</div>}
-                              {best.bestLap && <div style={{ color: "#555", fontSize: 11, marginTop: 2 }}>🕐 {best.bestLap}</div>}
-                            </div>
-                          ) : <span style={{ color: "#2a2a2a" }}>—</span>}
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })()}
 
       {subTab === "Circuit" && (() => {
         const allLaps = data
