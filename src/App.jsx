@@ -2029,6 +2029,25 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates }) {
   const addSegment = () => setTemplateForm(f => ({ ...f, segments: [...f.segments, { type: "SkiErg", distance: "", unit: "m" }] }));
   const updateTplSegment = (i, k, v) => setTemplateForm(f => ({ ...f, segments: f.segments.map((s, j) => j === i ? { ...s, [k]: v } : s) }));
   const removeSegment = (i) => setTemplateForm(f => ({ ...f, segments: f.segments.filter((_, j) => j !== i) }));
+  const duplicateSegment = (i) => setTemplateForm(f => ({
+    ...f,
+    segments: [...f.segments.slice(0, i + 1), { ...f.segments[i] }, ...f.segments.slice(i + 1)]
+  }));
+
+  const dragIndex = useRef(null);
+  const onDragStart = (i) => { dragIndex.current = i; };
+  const onDragOver = (e, i) => {
+    e.preventDefault();
+    if (dragIndex.current === null || dragIndex.current === i) return;
+    setTemplateForm(f => {
+      const segs = [...f.segments];
+      const [moved] = segs.splice(dragIndex.current, 1);
+      segs.splice(i, 0, moved);
+      dragIndex.current = i;
+      return { ...f, segments: segs };
+    });
+  };
+  const onDragEnd = () => { dragIndex.current = null; };
   const deleteTemplate = (id) => setTemplates(t => t.filter(x => x.id !== id));
   const startEdit = (r) => { setForm({ ...r }); setEditingId(r.id); setSubTab("+"); };
   const deleteEntry = (id) => setData(d => d.filter(r => r.id !== id));
@@ -2141,7 +2160,14 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates }) {
               </button>
             </div>
             {templateForm.segments.map((seg, i) => (
-              <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center" }}>
+              <div key={i}
+                draggable
+                onDragStart={() => onDragStart(i)}
+                onDragOver={e => onDragOver(e, i)}
+                onDragEnd={onDragEnd}
+                style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center", cursor: "grab", opacity: 1, transition: "opacity 0.15s" }}>
+                {/* Drag handle */}
+                <div style={{ color: "#333", fontSize: 16, cursor: "grab", flexShrink: 0, userSelect: "none", paddingTop: 2 }}>⠿</div>
                 <select value={seg.type} onChange={e => updateTplSegment(i, "type", e.target.value)} style={{ ...inputStyle, flex: 2 }}>
                   {HYROX_STATION_BASES.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
@@ -2149,7 +2175,10 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates }) {
                 <select value={seg.unit} onChange={e => updateTplSegment(i, "unit", e.target.value)} style={{ ...inputStyle, flex: 1 }}>
                   {["m", "km", "reps", "cal"].map(u => <option key={u} value={u}>{u}</option>)}
                 </select>
-                <button onClick={() => removeSegment(i)} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #333", background: "transparent", color: "#f87144", fontSize: 16, cursor: "pointer", flexShrink: 0 }}>×</button>
+                {/* Duplicate */}
+                <button onClick={() => duplicateSegment(i)} title="Dupliquer" style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #333", background: "transparent", color: "#888", fontSize: 14, cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>⧉</button>
+                {/* Remove */}
+                <button onClick={() => removeSegment(i)} title="Supprimer" style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #333", background: "transparent", color: "#f87144", fontSize: 16, cursor: "pointer", flexShrink: 0 }}>×</button>
               </div>
             ))}
             <button onClick={addSegment} style={{ padding: "7px 16px", borderRadius: 8, border: `1.5px solid ${col.main}44`, background: "transparent", color: col.main, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", marginTop: 4 }}>+ Ajouter un segment</button>
