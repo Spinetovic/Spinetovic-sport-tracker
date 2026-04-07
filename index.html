@@ -1,10 +1,22 @@
 <!DOCTYPE html>
 <html lang="fr">
   <head>
+    <meta name="theme-color" content="#060606">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Sport Tracker">
+    <link rel="manifest" href="/manifest.json">
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sport Tracker — Tom & Camille</title>
   </head>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js');
+      });
+    }
+</script>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
