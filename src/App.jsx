@@ -152,6 +152,31 @@ function parseTimeInput(str) {
   return null;
 }
 
+function SearchBar({ value, onChange, placeholder = "Rechercher…" }) {
+  return (
+    <div style={{ position: "relative", flex: 1, maxWidth: 280 }}>
+      <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#52525b", fontSize: 14, pointerEvents: "none" }}>🔍</span>
+      <input
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        style={{
+          width: "100%", background: "#27272a", border: "1px solid #3f3f46",
+          borderRadius: 8, padding: "7px 12px 7px 32px", color: "#fff",
+          fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box",
+        }}
+      />
+      {value && (
+        <button onClick={() => onChange("")} style={{
+          position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
+          background: "none", border: "none", color: "#52525b", fontSize: 16,
+          cursor: "pointer", lineHeight: 1, padding: 0,
+        }}>×</button>
+      )}
+    </div>
+  );
+}
+
 function Badge({ color, children }) {
   return (
     <span style={{
@@ -646,6 +671,7 @@ function RunningTab({ data, setData, raceNames, setRaceNames }) {
   const [subTab, setSubTab] = useState("Historique");
   const [form, setForm] = useState(defaultRunForm);
   const [filter, setFilter] = useState("Tous");
+  const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [newRaceName, setNewRaceName] = useState("");
   const [showAddRace, setShowAddRace] = useState(false);
@@ -685,7 +711,8 @@ function RunningTab({ data, setData, raceNames, setRaceNames }) {
   const deleteRun = (id) => setData(d => d.filter(r => r.id !== id));
 
   const filtered = filter === "Tous" ? data : data.filter(r => r.athlete === filter);
-  const sorted = [...filtered].sort((a, b) => new Date(b.date) - new Date(a.date));
+  const searchFiltered = search.trim() ? filtered.filter(r => [r.raceName, r.distance, r.notes].some(v => v?.toLowerCase().includes(search.toLowerCase()))) : filtered;
+  const sorted = [...searchFiltered].sort((a, b) => new Date(b.date) - new Date(a.date));
 
   const best = (athlete) => {
     const runs = data.filter(r => r.athlete === athlete && r.secs);
@@ -883,7 +910,7 @@ function RunningTab({ data, setData, raceNames, setRaceNames }) {
 
       {subTab === "Historique" && (
         <div>
-          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+          <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
             {["Tous", ...ATHLETES].map(f => (
               <button key={f} onClick={() => setFilter(f)} style={{
                 padding: "5px 16px",
@@ -896,9 +923,10 @@ function RunningTab({ data, setData, raceNames, setRaceNames }) {
                 cursor: "pointer",
               }}>{f}</button>
             ))}
+            <SearchBar value={search} onChange={setSearch} placeholder="Rechercher une course, distance…" />
           </div>
           {sorted.length === 0 ? (
-            <div style={{ color: "#52525b", textAlign: "center", padding: 40, fontSize: 14 }}>Aucune sortie enregistrée</div>
+            <div style={{ color: "#52525b", textAlign: "center", padding: 40, fontSize: 14 }}>{search ? "Aucun résultat pour cette recherche" : "Aucune sortie enregistrée"}</div>
           ) : sorted.map(r => (
             <div key={r.id} style={{
               padding: "14px 18px",
@@ -1746,6 +1774,7 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(defaultHyroxForm);
   const [filter, setFilter] = useState("Tous");
+  const [search, setSearch] = useState("");
   const [newPartner, setNewPartner] = useState("");
   const [showAddPartner, setShowAddPartner] = useState(false);
   const [trainingEditId, setTrainingEditId] = useState(null);
@@ -1819,7 +1848,8 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
   const deleteEntry = (id) => setData(d => d.filter(r => r.id !== id));
 
   const filtered = filter === "Tous" ? data : data.filter(r => r.athlete === filter);
-  const sorted = [...filtered].sort((a, b) => new Date(b.date) - new Date(a.date));
+  const searchFiltered = search.trim() ? filtered.filter(r => [r.eventName, r.category, r.partner, r.notes].some(v => v?.toLowerCase().includes(search.toLowerCase()))) : filtered;
+  const sorted = [...searchFiltered].sort((a, b) => new Date(b.date) - new Date(a.date));
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
@@ -1999,7 +2029,7 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
 
       {subTab === "Historique" && (
         <div>
-          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+          <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
             {["Tous", ...ATHLETES].map(f => (
               <button key={f} onClick={() => setFilter(f)} style={{
                 padding: "5px 16px", borderRadius: "999px",
@@ -2009,6 +2039,7 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
                 fontWeight: 700, fontSize: 12, cursor: "pointer",
               }}>{f}</button>
             ))}
+            <SearchBar value={search} onChange={setSearch} placeholder="Rechercher ville, événement…" />
           </div>
           {(() => {
             // Fusionner courses et entraînements
@@ -2016,10 +2047,11 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
             const allEntries = [
               ...sorted.map(r => ({ ...r, _type: "course" })),
               ...trainingFiltered.map(r => ({ ...r, _type: "training" })),
-            ].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+            ].sort((a, b) => (b.date || "").localeCompare(a.date || ""))
+            .filter(r => !search.trim() || [r.eventName, r.category, r.partner, r.notes, r.trainingPartner].some(v => v?.toLowerCase().includes(search.toLowerCase())));
 
             if (allEntries.length === 0) return (
-              <div style={{ color: "#52525b", textAlign: "center", padding: 40, fontSize: 14 }}>Aucune activité Hyrox enregistrée</div>
+              <div style={{ color: "#52525b", textAlign: "center", padding: 40, fontSize: 14 }}>{search ? "Aucun résultat pour cette recherche" : "Aucune activité Hyrox enregistrée"}</div>
             );
 
             return allEntries.map(r => {
@@ -2162,6 +2194,7 @@ function KartingTab({ data, setData }) {
   const [form, setForm] = useState(defaultKartForm);
   const [editingId, setEditingId] = useState(null);
   const [filter, setFilter] = useState("Tous");
+  const [search, setSearch] = useState("");
   const [bulkMode, setBulkMode] = useState(false);
   const [bulkForms, setBulkForms] = useState(
     KARTING_SESSIONS.map(s => ({ ...defaultKartForm, session: s }))
@@ -2194,7 +2227,8 @@ function KartingTab({ data, setData }) {
   const deleteEntry = (id) => setData(d => d.filter(r => r.id !== id));
 
   const filtered = filter === "Tous" ? data : data.filter(r => r.athlete === filter);
-  const sorted = [...filtered].sort((a, b) => b.date?.localeCompare(a.date));
+  const searchFiltered = search.trim() ? filtered.filter(r => [r.circuit, r.session, r.notes].some(v => v?.toLowerCase().includes(search.toLowerCase()))) : filtered;
+  const sorted = [...searchFiltered].sort((a, b) => b.date?.localeCompare(a.date));
 
   // Group by date+format for display
   const groupedDates = [...new Set(sorted.map(r => r.date))];
@@ -2404,13 +2438,14 @@ function KartingTab({ data, setData }) {
 
       {subTab === "Historique" && (
         <div>
-          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+          <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
             {["Tous", ...ATHLETES].map(f => (
               <button key={f} onClick={() => setFilter(f)} style={{ padding: "5px 16px", borderRadius: "999px", border: filter === f ? `1.5px solid ${col.main}` : "1.5px solid #222", background: filter === f ? col.light : "transparent", color: filter === f ? col.main : "#888", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>{f}</button>
             ))}
+            <SearchBar value={search} onChange={setSearch} placeholder="Rechercher session, circuit…" />
           </div>
           {groupedDates.length === 0 ? (
-            <div style={{ color: "#52525b", textAlign: "center", padding: 40 }}>Aucun résultat enregistré</div>
+            <div style={{ color: "#52525b", textAlign: "center", padding: 40 }}>{search ? "Aucun résultat pour cette recherche" : "Aucun résultat enregistré"}</div>
           ) : groupedDates.map(date => {
             const dayEntries = sorted.filter(r => r.date === date);
             const athletes = [...new Set(dayEntries.map(r => r.athlete))];
