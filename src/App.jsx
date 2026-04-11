@@ -1748,6 +1748,12 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
   const [filter, setFilter] = useState("Tous");
   const [newPartner, setNewPartner] = useState("");
   const [showAddPartner, setShowAddPartner] = useState(false);
+  const [trainingEditId, setTrainingEditId] = useState(null);
+
+  const handleEditTraining = (r) => {
+    setTrainingEditId(r.id);
+    setSubTab("Entraînements");
+  };
 
   const col = SPORT_COLORS["Hyrox"];
   const isDouble = form.category !== "Solo";
@@ -1857,7 +1863,7 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
       {subTab === "Records" && <HyroxRecords data={data} trainingData={trainingData || []} templates={templates || []} />}
       {subTab === "Comparaison" && <HyroxComparison data={data} />}
       {subTab === "Suivi" && <HyroxLiveTracker data={data} />}
-      {subTab === "Entraînements" && <HyroxTrainingTab data={trainingData || []} setData={setTrainingData} templates={templates || []} setTemplates={setTemplates} partners={partners || []} setPartners={setPartners} />}
+      {subTab === "Entraînements" && <HyroxTrainingTab data={trainingData || []} setData={setTrainingData} templates={templates || []} setTemplates={setTemplates} partners={partners || []} setPartners={setPartners} editId={trainingEditId} onEditDone={() => setTrainingEditId(null)} />}
 
       {subTab === "+" && (
         <div style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 16, padding: "20px 24px" }}>
@@ -2060,7 +2066,7 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, marginLeft: 12 }}>
                       <ActionButtons accentColor={entryColor}
-                        onEdit={() => isCourse ? startEdit(r) : null}
+                        onEdit={() => isCourse ? startEdit(r) : handleEditTraining(r)}
                         onDelete={() => isCourse ? deleteEntry(r.id) : setTrainingData(d => d.filter(x => x.id !== r.id))}
                       />
                       <div style={{ textAlign: "right" }}>
@@ -2698,7 +2704,7 @@ const HYROX_STATION_DEFAULTS = {
 };
 const defaultTrainingForm = { date: "", athlete: "Tom", templateId: "", totalTime: "", isShared: false, trainingPartner: "", notes: "", segments: {} };
 
-function HyroxTrainingTab({ data, setData, templates, setTemplates, partners, setPartners }) {
+function HyroxTrainingTab({ data, setData, templates, setTemplates, partners, setPartners, editId, onEditDone }) {
   const [subTab, setSubTab] = useState("Historique");
   const [form, setForm] = useState(defaultTrainingForm);
   const [editingId, setEditingId] = useState(null);
@@ -2709,6 +2715,19 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates, partners, se
   const [newPartner, setNewPartner] = useState("");
   const [showAddPartner, setShowAddPartner] = useState(false);
   const col = SPORT_COLORS["Hyrox"];
+
+  // Ouvrir le formulaire d'édition si editId est passé depuis l'historique
+  useEffect(() => {
+    if (editId && data.length > 0) {
+      const r = data.find(x => String(x.id) === String(editId));
+      if (r) {
+        setForm({ ...r });
+        setEditingId(r.id);
+        setSubTab("+");
+        if (onEditDone) onEditDone();
+      }
+    }
+  }, [editId, data]);
 
   const update = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const updateSegment = (idx, v) => setForm(f => ({ ...f, segments: { ...f.segments, [idx]: v } }));
