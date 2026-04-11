@@ -1122,25 +1122,28 @@ function HyroxLiveTracker({ data }) {
   const [coachElapsed, setCoachElapsed] = useState(0); // secondes écoulées
   const [coachCheckpointIdx, setCoachCheckpointIdx] = useState(0); // prochain checkpoint à valider
   const [coachSplits, setCoachSplits] = useState({}); // { "Fin Run 1": 47, ... }
-  const [coachReferenceId, setCoachReferenceId] = useState("");
   const timerRef = useRef(null);
 
   const racesWithCheckpoints = data.filter(r => r.checkpointSecs && Object.keys(r.checkpointSecs).length > 0);
 
-  // Chrono coach
+  // Chrono coach — on utilise une ref pour startTime pour éviter les problèmes de closure
+  const startTimeRef = useRef(null);
+
   useEffect(() => {
     if (coachRunning) {
       timerRef.current = setInterval(() => {
-        setCoachElapsed(Math.floor((Date.now() - coachStartTime) / 1000));
-      }, 500);
+        setCoachElapsed(Math.floor((Date.now() - startTimeRef.current) / 1000));
+      }, 250);
     } else {
       clearInterval(timerRef.current);
     }
     return () => clearInterval(timerRef.current);
-  }, [coachRunning, coachStartTime]);
+  }, [coachRunning]);
 
   const startCoach = () => {
-    setCoachStartTime(Date.now());
+    const now = Date.now();
+    startTimeRef.current = now;
+    setCoachStartTime(now);
     setCoachElapsed(0);
     setCoachCheckpointIdx(0);
     setCoachSplits({});
@@ -1177,18 +1180,10 @@ function HyroxLiveTracker({ data }) {
     return diff < 0 ? `+${str}` : `-${str}`; // négatif = en avance = +, positif = retard = -
   };
 
-  // Course de référence sélectionnée pour le mode coach
-  const refRace = racesWithCheckpoints.find(r => String(r.id) === String(coachReferenceId));
-
-  // Dernier checkpoint validé pour affichage
+  // Pas de course de référence unique — on compare à toutes
   const lastValidatedIdx = coachCheckpointIdx - 1;
   const lastCp = lastValidatedIdx >= 0 ? HYROX_CHECKPOINTS[lastValidatedIdx] : null;
   const nextCp = coachCheckpointIdx < HYROX_CHECKPOINTS.length ? HYROX_CHECKPOINTS[coachCheckpointIdx] : null;
-
-  // Comparaison au dernier checkpoint validé
-  const lastDiff = lastCp && refRace
-    ? (coachSplits[lastCp] || 0) - (refRace.checkpointSecs?.[lastCp] || 0)
-    : null;
 
   // Mode manuel
   const currentSecs = parseTimeInput(currentTime);
@@ -1220,42 +1215,9 @@ function HyroxLiveTracker({ data }) {
       {mode === "coach" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-          {/* Sélection de la course de référence */}
-          {!coachRunning && (
-            <div style={{ background: "#1f1f23", border: "1px solid #303036", borderRadius: 14, padding: "20px 24px" }}>
-              <div style={{ color: "#fff", fontWeight: 800, fontSize: 15, marginBottom: 16 }}>Course de référence</div>
-              {racesWithCheckpoints.length === 0 ? (
-                <div style={{ color: "#52525b", fontSize: 13 }}>
-                  Aucune course avec temps de passage. Ajoute-les dans le formulaire de saisie Hyrox.
-                </div>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {racesWithCheckpoints.map(r => (
-                    <div
-                      key={r.id}
-                      onClick={() => setCoachReferenceId(String(r.id))}
-                      style={{
-                        padding: "12px 16px", borderRadius: 10, cursor: "pointer",
-                        border: `1.5px solid ${String(r.id) === coachReferenceId ? col.main : "#303036"}`,
-                        background: String(r.id) === coachReferenceId ? col.main + "15" : "#27272a",
-                        display: "flex", justifyContent: "space-between", alignItems: "center",
-                      }}
-                    >
-                      <div>
-                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                          <Badge color={col.main}>{r.athlete}</Badge>
-                          <span style={{ color: "#fff", fontWeight: 700 }}>{r.eventName || "Course"}</span>
-                          <span style={{ color: "#71717a", fontSize: 12 }}>{r.date}</span>
-                        </div>
-                        <div style={{ color: "#71717a", fontSize: 11, marginTop: 4 }}>
-                          {Object.keys(r.checkpointSecs).length} checkpoint{Object.keys(r.checkpointSecs).length > 1 ? "s" : ""} · Temps final : {formatTime(r.totalSecs)}
-                        </div>
-                      </div>
-                      {String(r.id) === coachReferenceId && <span style={{ color: col.main, fontSize: 18 }}>✓</span>}
-                    </div>
-                  ))}
-                </div>
-              )}
+          {racesWithCheckpoints.length === 0 && (
+            <div style={{ background: "#1f1f23", border: "1px solid #303036", borderRadius: 14, padding: "20px 24px", color: "#52525b", fontSize: 13 }}>
+              Aucune course avec temps de passage. Ajoute-les dans le formulaire de saisie Hyrox.
             </div>
           )}
 
@@ -1276,39 +1238,58 @@ function HyroxLiveTracker({ data }) {
               {formatElapsed(coachElapsed)}
             </div>
 
-            {/* Prochain checkpoint */}
+            {/* Prochain checkpoint + temps de référence de toutes les courses */}
             {coachRunning && nextCp && (
               <div style={{ marginBottom: 20 }}>
-                <div style={{ color: "#71717a", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
+                <div style={{ color: "#71717a", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
                   Prochain checkpoint
                 </div>
-                <div style={{ color: "#fff", fontWeight: 700, fontSize: 18 }}>{nextCp}</div>
-                {refRace?.checkpointSecs?.[nextCp] && (
-                  <div style={{ color: "#71717a", fontSize: 12, marginTop: 4 }}>
-                    Réf : <span style={{ color: col.main }}>{formatTime(refRace.checkpointSecs[nextCp])}</span>
+                <div style={{ color: "#fff", fontWeight: 700, fontSize: 20, marginBottom: 10 }}>{nextCp}</div>
+                {racesWithCheckpoints.filter(r => r.checkpointSecs?.[nextCp]).length > 0 && (
+                  <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+                    {racesWithCheckpoints.map(r => {
+                      const refSecs = r.checkpointSecs?.[nextCp];
+                      if (!refSecs) return null;
+                      return (
+                        <div key={r.id} style={{ background: "#27272a", borderRadius: 8, padding: "5px 12px", fontSize: 12 }}>
+                          <span style={{ color: "#71717a" }}>{r.eventName || r.date} · </span>
+                          <span style={{ color: col.main, fontWeight: 700 }}>{formatTime(refSecs)}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
             )}
 
-            {/* Comparaison dernier checkpoint */}
-            {lastDiff !== null && (
-              <div style={{
-                background: lastDiff < 0 ? "#4ade8022" : "#f8717122",
-                border: `1px solid ${lastDiff < 0 ? "#4ade8044" : "#f8717144"}`,
-                borderRadius: 12, padding: "12px 20px", marginBottom: 20, display: "inline-block",
-              }}>
-                <div style={{ color: "#71717a", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em" }}>
-                  {lastCp}
+            {/* Comparaison dernier checkpoint — toutes les courses */}
+            {lastCp && coachSplits[lastCp] && racesWithCheckpoints.length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ color: "#71717a", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>
+                  {lastCp} — {formatElapsed(coachSplits[lastCp])}
                 </div>
-                <div style={{
-                  color: lastDiff < 0 ? "#4ade80" : "#f87171",
-                  fontWeight: 900, fontSize: 28, marginTop: 4,
-                }}>
-                  {formatDiff(lastDiff)}
-                </div>
-                <div style={{ color: "#71717a", fontSize: 11, marginTop: 2 }}>
-                  {lastDiff < 0 ? "par rapport à la référence" : "par rapport à la référence"}
+                <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+                  {racesWithCheckpoints.map(r => {
+                    const refSecs = r.checkpointSecs?.[lastCp];
+                    if (!refSecs) return null;
+                    const diff = coachSplits[lastCp] - refSecs;
+                    const isAhead = diff < 0;
+                    return (
+                      <div key={r.id} style={{
+                        background: isAhead ? "#4ade8022" : "#f8717122",
+                        border: `1px solid ${isAhead ? "#4ade8044" : "#f8717144"}`,
+                        borderRadius: 10, padding: "10px 16px", minWidth: 120,
+                      }}>
+                        <div style={{ color: "#888", fontSize: 11, marginBottom: 4 }}>
+                          {r.eventName || r.date}
+                          <span style={{ color: "#555", marginLeft: 4 }}>{r.athlete}</span>
+                        </div>
+                        <div style={{ color: isAhead ? "#4ade80" : "#f87171", fontWeight: 900, fontSize: 22 }}>
+                          {formatDiff(diff)}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -1323,44 +1304,33 @@ function HyroxLiveTracker({ data }) {
             {/* Boutons */}
             <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
               {!coachRunning ? (
-                <button
-                  onClick={startCoach}
-                  disabled={!coachReferenceId && racesWithCheckpoints.length > 0}
-                  style={{
-                    padding: "16px 40px", borderRadius: 14, border: "none",
-                    background: (!coachReferenceId && racesWithCheckpoints.length > 0) ? "#27272a" : col.main,
-                    color: (!coachReferenceId && racesWithCheckpoints.length > 0) ? "#52525b" : "#000",
-                    fontWeight: 900, fontSize: 18, cursor: (!coachReferenceId && racesWithCheckpoints.length > 0) ? "not-allowed" : "pointer",
-                    fontFamily: "inherit", letterSpacing: "0.02em",
-                  }}
-                >
+                <button onClick={startCoach} style={{
+                  padding: "16px 40px", borderRadius: 14, border: "none",
+                  background: col.main, color: "#000",
+                  fontWeight: 900, fontSize: 18, cursor: "pointer",
+                  fontFamily: "inherit", letterSpacing: "0.02em",
+                }}>
                   ▶ Démarrer
                 </button>
               ) : (
                 <>
                   {nextCp && (
-                    <button
-                      onClick={validateCheckpoint}
-                      style={{
-                        padding: "18px 0", width: "100%", maxWidth: 360,
-                        borderRadius: 14, border: "none",
-                        background: col.main, color: "#000",
-                        fontWeight: 900, fontSize: 20, cursor: "pointer",
-                        fontFamily: "inherit", letterSpacing: "0.02em",
-                        boxShadow: `0 4px 24px ${col.main}44`,
-                      }}
-                    >
+                    <button onClick={validateCheckpoint} style={{
+                      padding: "18px 0", width: "100%", maxWidth: 360,
+                      borderRadius: 14, border: "none",
+                      background: col.main, color: "#000",
+                      fontWeight: 900, fontSize: 20, cursor: "pointer",
+                      fontFamily: "inherit", letterSpacing: "0.02em",
+                      boxShadow: `0 4px 24px ${col.main}44`,
+                    }}>
                       ✓ {nextCp}
                     </button>
                   )}
-                  <button
-                    onClick={resetCoach}
-                    style={{
-                      padding: "12px 24px", borderRadius: 12, border: "1px solid #3f3f46",
-                      background: "transparent", color: "#888",
-                      fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit",
-                    }}
-                  >
+                  <button onClick={resetCoach} style={{
+                    padding: "12px 24px", borderRadius: 12, border: "1px solid #3f3f46",
+                    background: "transparent", color: "#888",
+                    fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit",
+                  }}>
                     ✕ Arrêter
                   </button>
                 </>
@@ -1374,23 +1344,42 @@ function HyroxLiveTracker({ data }) {
               <div style={{ padding: "12px 20px", borderBottom: "1px solid #303036", color: "#fff", fontWeight: 700, fontSize: 13 }}>
                 Checkpoints validés
               </div>
-              {Object.entries(coachSplits).map(([cp, secs], i) => {
-                const refSecs = refRace?.checkpointSecs?.[cp];
-                const diff = refSecs ? secs - refSecs : null;
-                return (
-                  <div key={cp} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 20px", borderBottom: "1px solid #2a2a2e", background: i % 2 === 0 ? "#1f1f23" : "#27272a" }}>
-                    <span style={{ color: "#888", fontSize: 13 }}>{cp}</span>
-                    <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-                      <span style={{ color: "#fff", fontWeight: 700, fontFamily: "monospace", fontSize: 14 }}>{formatElapsed(secs)}</span>
-                      {diff !== null && (
-                        <span style={{ color: diff < 0 ? "#4ade80" : "#f87171", fontWeight: 700, fontSize: 13 }}>
-                          {formatDiff(diff)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, minWidth: 400 }}>
+                  <thead>
+                    <tr style={{ background: "#27272a" }}>
+                      <th style={{ padding: "8px 14px", color: "#71717a", fontWeight: 700, textAlign: "left", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.07em", borderBottom: "1px solid #303036" }}>Checkpoint</th>
+                      <th style={{ padding: "8px 14px", color: col.main, fontWeight: 700, textAlign: "center", fontSize: 11, borderBottom: "1px solid #303036" }}>Mon temps</th>
+                      {racesWithCheckpoints.map(r => (
+                        <th key={r.id} style={{ padding: "8px 14px", color: "#888", fontWeight: 700, textAlign: "center", fontSize: 11, borderBottom: "1px solid #303036", whiteSpace: "nowrap" }}>
+                          {r.eventName || r.date}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(coachSplits).map(([cp, secs], i) => (
+                      <tr key={cp} style={{ background: i % 2 === 0 ? "#1f1f23" : "#27272a" }}>
+                        <td style={{ padding: "10px 14px", color: "#888", fontSize: 12, borderBottom: "1px solid #2a2a2e", whiteSpace: "nowrap" }}>{cp}</td>
+                        <td style={{ padding: "10px 14px", color: "#fff", fontWeight: 700, fontFamily: "monospace", textAlign: "center", borderBottom: "1px solid #2a2a2e" }}>{formatElapsed(secs)}</td>
+                        {racesWithCheckpoints.map(r => {
+                          const refSecs = r.checkpointSecs?.[cp];
+                          const diff = refSecs ? secs - refSecs : null;
+                          return (
+                            <td key={r.id} style={{ padding: "10px 14px", textAlign: "center", borderBottom: "1px solid #2a2a2e" }}>
+                              {diff !== null ? (
+                                <span style={{ color: diff < 0 ? "#4ade80" : "#f87171", fontWeight: 700, fontSize: 12 }}>
+                                  {formatDiff(diff)}
+                                </span>
+                              ) : <span style={{ color: "#3f3f46" }}>—</span>}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>
