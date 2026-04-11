@@ -2035,6 +2035,19 @@ function BodyTab({ data, setData }) {
 
 // ── HYROX TRAINING TAB ────────────────────────────────────────────────────────
 const HYROX_STATION_BASES = ["SkiErg", "Sled Push", "Sled Pull", "Burpee Broad Jump", "Rowing", "Farmers Carry", "Sandbag Lunges", "Wall Balls", "Run", "Vélo"];
+
+const HYROX_STATION_DEFAULTS = {
+  "SkiErg":           { distance: "1000", unit: "m" },
+  "Sled Push":        { distance: "50",   unit: "m" },
+  "Sled Pull":        { distance: "50",   unit: "m" },
+  "Burpee Broad Jump":{ distance: "80",   unit: "m" },
+  "Rowing":           { distance: "1000", unit: "m" },
+  "Farmers Carry":    { distance: "200",  unit: "m" },
+  "Sandbag Lunges":   { distance: "100",  unit: "m" },
+  "Wall Balls":       { distance: "100",  unit: "reps" },
+  "Run":              { distance: "1000", unit: "m" },
+  "Vélo":             { distance: "",     unit: "m" },
+};
 const defaultTrainingForm = { date: "", athlete: "Tom", templateId: "", totalTime: "", isShared: false, trainingPartner: "", notes: "", segments: {} };
 
 function HyroxTrainingTab({ data, setData, templates, setTemplates, partners, setPartners }) {
@@ -2101,8 +2114,21 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates, partners, se
     setTemplateForm({ name: "", segments: [] });
   };
 
-  const addSegment = () => setTemplateForm(f => ({ ...f, segments: [...f.segments, { type: "SkiErg", distance: "", unit: "m" }] }));
-  const updateTplSegment = (i, k, v) => setTemplateForm(f => ({ ...f, segments: f.segments.map((s, j) => j === i ? { ...s, [k]: v } : s) }));
+  const addSegment = () => {
+    const def = HYROX_STATION_DEFAULTS["SkiErg"];
+    setTemplateForm(f => ({ ...f, segments: [...f.segments, { type: "SkiErg", distance: def.distance, unit: def.unit }] }));
+  };
+  const updateTplSegment = (i, k, v) => setTemplateForm(f => ({
+    ...f,
+    segments: f.segments.map((s, j) => {
+      if (j !== i) return s;
+      if (k === "type") {
+        const def = HYROX_STATION_DEFAULTS[v] || { distance: "", unit: "m" };
+        return { ...s, type: v, distance: def.distance, unit: def.unit };
+      }
+      return { ...s, [k]: v };
+    })
+  }));
   const removeSegment = (i) => setTemplateForm(f => ({ ...f, segments: f.segments.filter((_, j) => j !== i) }));
   const duplicateSegment = (i) => setTemplateForm(f => ({
     ...f,
@@ -2323,6 +2349,7 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates, partners, se
             const allSecs = progressionData.map(r => parseTimeInput(r.totalTime)).filter(Boolean);
             const minS = Math.min(...allSecs), maxS = Math.max(...allSecs), range = maxS - minS || 1;
             const PAD_L = 70, PAD_R = 20, PAD_T = 16, PAD_B = 36, W = 800, H = 200;
+            const cW = W - PAD_L - PAD_R, cH = H - PAD_T - PAD_B;
             const tpl = templates.find(t => String(t.id) === String(compareTemplate));
             const byAthlete = {};
             ATHLETES.forEach(a => { byAthlete[a] = progressionData.filter(r => r.athlete === a); });
