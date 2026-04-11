@@ -1115,16 +1115,26 @@ function HyroxLiveTracker({ data }) {
   // ── Mode Manuel ──
   const [currentTime, setCurrentTime] = useState("");
   const [selectedCheckpoint, setSelectedCheckpoint] = useState("");
+  const [manualAthlete, setManualAthlete] = useState(ATHLETES[0]);
 
   // ── Mode Coach ──
+  const [coachAthlete, setCoachAthlete] = useState(ATHLETES[0]);
   const [coachRunning, setCoachRunning] = useState(false);
-  const [coachStartTime, setCoachStartTime] = useState(null); // timestamp Date.now()
-  const [coachElapsed, setCoachElapsed] = useState(0); // secondes écoulées
-  const [coachCheckpointIdx, setCoachCheckpointIdx] = useState(0); // prochain checkpoint à valider
-  const [coachSplits, setCoachSplits] = useState({}); // { "Fin Run 1": 47, ... }
+  const [coachStartTime, setCoachStartTime] = useState(null);
+  const [coachElapsed, setCoachElapsed] = useState(0);
+  const [coachCheckpointIdx, setCoachCheckpointIdx] = useState(0);
+  const [coachSplits, setCoachSplits] = useState({});
   const timerRef = useRef(null);
 
-  const racesWithCheckpoints = data.filter(r => r.checkpointSecs && Object.keys(r.checkpointSecs).length > 0);
+  const allRacesWithCheckpoints = data.filter(r => r.checkpointSecs && Object.keys(r.checkpointSecs).length > 0);
+  const racesWithCheckpoints = allRacesWithCheckpoints.filter(r => r.athlete === coachAthlete);
+  const manualRaces = allRacesWithCheckpoints.filter(r => r.athlete === manualAthlete);
+
+  const raceLabel = (r) => {
+    const cat = r.category && r.category !== "Solo" ? r.category : "Solo";
+    const partner = r.partner ? ` · ${r.partner}` : "";
+    return `${r.eventName || r.date} (${cat}${partner})`;
+  };
 
   // Chrono coach — on utilise une ref pour startTime pour éviter les problèmes de closure
   const startTimeRef = useRef(null);
@@ -1215,9 +1225,39 @@ function HyroxLiveTracker({ data }) {
       {mode === "coach" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-          {racesWithCheckpoints.length === 0 && (
-            <div style={{ background: "#1f1f23", border: "1px solid #303036", borderRadius: 14, padding: "20px 24px", color: "#52525b", fontSize: 13 }}>
-              Aucune course avec temps de passage. Ajoute-les dans le formulaire de saisie Hyrox.
+          {/* Sélection athlète */}
+          {!coachRunning && (
+            <div style={{ background: "#1f1f23", border: "1px solid #303036", borderRadius: 14, padding: "16px 20px" }}>
+              <div style={{ color: "#888", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Qui participe ?</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                {ATHLETES.map(a => (
+                  <button key={a} onClick={() => setCoachAthlete(a)} style={{
+                    padding: "10px 28px", borderRadius: 10, border: `2px solid ${coachAthlete === a ? col.main : "#303036"}`,
+                    background: coachAthlete === a ? col.main + "22" : "transparent",
+                    color: coachAthlete === a ? col.main : "#888",
+                    fontWeight: 800, fontSize: 15, cursor: "pointer", fontFamily: "inherit",
+                  }}>{a}</button>
+                ))}
+              </div>
+              {racesWithCheckpoints.length === 0 && (
+                <div style={{ color: "#52525b", fontSize: 12, marginTop: 10 }}>
+                  Aucune course avec temps de passage pour {coachAthlete}.
+                </div>
+              )}
+              {racesWithCheckpoints.length > 0 && (
+                <div style={{ color: "#71717a", fontSize: 12, marginTop: 10 }}>
+                  {racesWithCheckpoints.length} course{racesWithCheckpoints.length > 1 ? "s" : ""} de référence : {racesWithCheckpoints.map(r => raceLabel(r)).join(", ")}
+                </div>
+              )}
+            </div>
+          )}
+
+          {coachRunning && (
+            <div style={{ background: "#1f1f23", border: `1px solid ${col.border}`, borderRadius: 10, padding: "10px 16px", display: "flex", alignItems: "center", gap: 10 }}>
+              <Badge color={col.main}>{coachAthlete}</Badge>
+              <span style={{ color: "#71717a", fontSize: 12 }}>
+                Comparé à {racesWithCheckpoints.length} course{racesWithCheckpoints.length > 1 ? "s" : ""}
+              </span>
             </div>
           )}
 
@@ -1278,11 +1318,11 @@ function HyroxLiveTracker({ data }) {
                       <div key={r.id} style={{
                         background: isAhead ? "#4ade8022" : "#f8717122",
                         border: `1px solid ${isAhead ? "#4ade8044" : "#f8717144"}`,
-                        borderRadius: 10, padding: "10px 16px", minWidth: 120,
+                        borderRadius: 10, padding: "10px 16px", minWidth: 130,
                       }}>
-                        <div style={{ color: "#888", fontSize: 11, marginBottom: 4 }}>
-                          {r.eventName || r.date}
-                          <span style={{ color: "#555", marginLeft: 4 }}>{r.athlete}</span>
+                        <div style={{ color: "#888", fontSize: 11, marginBottom: 2 }}>{r.eventName || r.date}</div>
+                        <div style={{ color: "#555", fontSize: 10, marginBottom: 6 }}>
+                          {r.category || "Solo"}{r.partner ? ` · ${r.partner}` : ""}
                         </div>
                         <div style={{ color: isAhead ? "#4ade80" : "#f87171", fontWeight: 900, fontSize: 22 }}>
                           {formatDiff(diff)}
@@ -1352,7 +1392,8 @@ function HyroxLiveTracker({ data }) {
                       <th style={{ padding: "8px 14px", color: col.main, fontWeight: 700, textAlign: "center", fontSize: 11, borderBottom: "1px solid #303036" }}>Mon temps</th>
                       {racesWithCheckpoints.map(r => (
                         <th key={r.id} style={{ padding: "8px 14px", color: "#888", fontWeight: 700, textAlign: "center", fontSize: 11, borderBottom: "1px solid #303036", whiteSpace: "nowrap" }}>
-                          {r.eventName || r.date}
+                          <div>{r.eventName || r.date}</div>
+                          <div style={{ color: "#555", fontWeight: 400, fontSize: 10 }}>{r.category || "Solo"}{r.partner ? ` · ${r.partner}` : ""}</div>
                         </th>
                       ))}
                     </tr>
@@ -1388,6 +1429,16 @@ function HyroxLiveTracker({ data }) {
       {/* ── MODE MANUEL ── */}
       {mode === "manual" && (
         <div style={{ background: "#1f1f23", border: `1px solid ${col.border}`, borderRadius: 14, padding: "20px 24px" }}>
+          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+            {ATHLETES.map(a => (
+              <button key={a} onClick={() => setManualAthlete(a)} style={{
+                padding: "8px 22px", borderRadius: 10, border: `2px solid ${manualAthlete === a ? col.main : "#303036"}`,
+                background: manualAthlete === a ? col.main + "22" : "transparent",
+                color: manualAthlete === a ? col.main : "#888",
+                fontWeight: 800, fontSize: 14, cursor: "pointer", fontFamily: "inherit",
+              }}>{a}</button>
+            ))}
+          </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <label style={{ color: "#888", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>Temps actuel</label>
@@ -1404,15 +1455,15 @@ function HyroxLiveTracker({ data }) {
             </div>
           </div>
 
-          {racesWithCheckpoints.length === 0 && (
+          {manualRaces.length === 0 && (
             <div style={{ color: "#52525b", textAlign: "center", padding: 24, fontSize: 13 }}>
-              Aucune course avec temps de passage enregistrés.
+              Aucune course avec temps de passage pour {manualAthlete}.
             </div>
           )}
 
-          {racesWithCheckpoints.length > 0 && currentSecs && selectedCheckpoint && (
+          {manualRaces.length > 0 && currentSecs && selectedCheckpoint && (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {racesWithCheckpoints.sort((a, b) => (a.date || "").localeCompare(b.date || "")).map(race => {
+              {manualRaces.sort((a, b) => (a.date || "").localeCompare(b.date || "")).map(race => {
                 const refSecs = race.checkpointSecs?.[selectedCheckpoint];
                 if (!refSecs) return null;
                 const diff = currentSecs - refSecs;
@@ -1422,11 +1473,11 @@ function HyroxLiveTracker({ data }) {
                   <div key={race.id} style={{ background: "#27272a", border: `1px solid ${diffColor}44`, borderRadius: 12, padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
                       <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
-                        <Badge color={col.main}>{race.athlete}</Badge>
                         <span style={{ color: "#fff", fontWeight: 700 }}>{race.eventName || race.date}</span>
                         {race.eventName && <span style={{ color: "#71717a", fontSize: 12 }}>{race.date}</span>}
                       </div>
-                      <div style={{ color: "#71717a", fontSize: 12 }}>
+                      <div style={{ color: "#555", fontSize: 11 }}>{race.category || "Solo"}{race.partner ? ` · ${race.partner}` : ""}</div>
+                      <div style={{ color: "#71717a", fontSize: 12, marginTop: 2 }}>
                         Réf : <span style={{ color: "#aaa", fontWeight: 600 }}>{formatTime(refSecs)}</span>
                         {race.totalSecs && <span style={{ marginLeft: 10 }}>Final : <span style={{ color: col.main, fontWeight: 600 }}>{formatTime(race.totalSecs)}</span></span>}
                       </div>
@@ -1442,16 +1493,17 @@ function HyroxLiveTracker({ data }) {
           )}
 
           {/* Tableau de référence */}
-          {racesWithCheckpoints.length > 0 && (
+          {manualRaces.length > 0 && (
             <div style={{ marginTop: 24, overflowX: "auto" }}>
               <div style={{ color: "#fff", fontWeight: 700, fontSize: 13, marginBottom: 12 }}>Tableau de référence</div>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, minWidth: 400 }}>
                 <thead>
                   <tr style={{ background: "#27272a" }}>
                     <th style={{ padding: "8px 12px", color: "#71717a", fontWeight: 700, textAlign: "left", textTransform: "uppercase", fontSize: 10, letterSpacing: "0.07em", borderBottom: "1px solid #303036" }}>Checkpoint</th>
-                    {racesWithCheckpoints.map(r => (
+                    {manualRaces.map(r => (
                       <th key={r.id} style={{ padding: "8px 12px", color: col.main, fontWeight: 700, textAlign: "center", fontSize: 11, borderBottom: "1px solid #303036", whiteSpace: "nowrap" }}>
-                        {r.eventName || r.date}<br/><span style={{ color: "#71717a", fontWeight: 400, fontSize: 10 }}>{r.athlete}</span>
+                        <div>{r.eventName || r.date}</div>
+                        <div style={{ color: "#555", fontWeight: 400, fontSize: 10 }}>{r.category || "Solo"}{r.partner ? ` · ${r.partner}` : ""}</div>
                       </th>
                     ))}
                   </tr>
@@ -1462,7 +1514,7 @@ function HyroxLiveTracker({ data }) {
                     return (
                       <tr key={cp} onClick={() => setSelectedCheckpoint(cp)} style={{ background: isSelected ? col.main + "15" : i % 2 === 0 ? "#1f1f23" : "#27272a", cursor: "pointer", borderLeft: isSelected ? `3px solid ${col.main}` : "3px solid transparent" }}>
                         <td style={{ padding: "8px 12px", color: isSelected ? col.main : "#888", fontWeight: isSelected ? 700 : 400, borderBottom: "1px solid #303036", whiteSpace: "nowrap" }}>{cp}</td>
-                        {racesWithCheckpoints.map(r => {
+                        {manualRaces.map(r => {
                           const secs = r.checkpointSecs?.[cp];
                           return <td key={r.id} style={{ padding: "8px 12px", color: secs ? "#fff" : "#3f3f46", textAlign: "center", fontWeight: 600, borderBottom: "1px solid #303036", fontFamily: "monospace" }}>{secs ? formatTime(secs) : "—"}</td>;
                         })}
