@@ -2050,7 +2050,7 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates }) {
   const update = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const updateSegment = (idx, v) => setForm(f => ({ ...f, segments: { ...f.segments, [idx]: v } }));
 
-  const selectedTemplate = templates.find(t => t.id === form.templateId);
+  const selectedTemplate = templates.find(t => String(t.id) === String(form.templateId));
 
   const submit = () => {
     if (!form.date || !form.templateId) return;
@@ -2082,7 +2082,7 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates }) {
   const saveTemplate = () => {
     if (!templateForm.name || !templateForm.segments.length) return;
     if (editingTemplate) {
-      setTemplates(t => t.map(x => x.id === editingTemplate ? { ...templateForm, id: editingTemplate } : x));
+      setTemplates(t => t.map(x => String(x.id) === String(editingTemplate) ? { ...templateForm, id: editingTemplate } : x));
       setEditingTemplate(null);
     } else {
       setTemplates(t => [...t, { ...templateForm, id: Date.now() }]);
@@ -2112,7 +2112,7 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates }) {
     });
   };
   const onDragEnd = () => { dragIndex.current = null; };
-  const deleteTemplate = (id) => setTemplates(t => t.filter(x => x.id !== id));
+  const deleteTemplate = (id) => setTemplates(t => t.filter(x => String(x.id) !== String(id)));
   const startEdit = (r) => { setForm({ ...r }); setEditingId(r.id); setSubTab("+"); };
   const deleteEntry = (id) => setData(d => d.filter(r => r.id !== id));
 
@@ -2288,7 +2288,7 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates }) {
             const allSecs = progressionData.map(r => parseTimeInput(r.totalTime)).filter(Boolean);
             const minS = Math.min(...allSecs), maxS = Math.max(...allSecs), range = maxS - minS || 1;
             const PAD_L = 70, PAD_R = 20, PAD_T = 16, PAD_B = 36, W = 800, H = 200;
-            const tpl = templates.find(t => t.id === compareTemplate);
+            const tpl = templates.find(t => String(t.id) === String(compareTemplate));
             const byAthlete = {};
             ATHLETES.forEach(a => { byAthlete[a] = progressionData.filter(r => r.athlete === a); });
             const ATHLETE_COLORS = { [ATHLETES[0]]: col.main, [ATHLETES[1]]: "#fff" };
@@ -2385,7 +2385,7 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates }) {
           {sorted.length === 0 ? (
             <div style={{ color: "#333", textAlign: "center", padding: 40 }}>Aucune séance enregistrée</div>
           ) : sorted.map(r => {
-            const tpl = templates.find(t => t.id === r.templateId);
+            const tpl = templates.find(t => String(t.id) === String(r.templateId));
             return (
               <div key={r.id} style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 12, padding: "14px 18px", marginBottom: 8 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -2639,9 +2639,12 @@ function useFirebaseValue(path, defaultValue) {
     return () => { if (unsubscribe) unsubscribe(); };
   }, [path]);
 
-  const setAndSync = (newVal) => {
-    setValue(newVal);
-    if (dbRef.current) dbRef.current.set(dbRef.current.ref, newVal);
+  const setAndSync = (updater) => {
+    setValue(prev => {
+      const newVal = typeof updater === "function" ? updater(prev) : updater;
+      if (dbRef.current) dbRef.current.set(dbRef.current.ref, newVal);
+      return newVal;
+    });
   };
 
   return [value, setAndSync];
@@ -2656,7 +2659,13 @@ export default function App() {
   const [hyroxData, setHyroxDataRaw, hyroxReady] = useFirebase("hyrox");
   const [kartingData, setKartingDataRaw, kartingReady] = useFirebase("karting");
   const [bodyData, setBodyDataRaw, bodyReady] = useFirebase("body");
-  const [hyroxTemplates, setHyroxTemplatesRaw] = useFirebaseValue("hyroxTemplates", []);
+  const [hyroxTemplates, setHyroxTemplatesRaw, hyroxTemplatesReady] = useFirebase("hyroxTemplates");
+  const setHyroxTemplatesRaw2 = (updater) => {
+    setHyroxTemplatesRaw(prev => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      return next;
+    });
+  };
   const [hyroxTrainingData, setHyroxTrainingDataRaw, hyroxTrainingReady] = useFirebase("hyroxTraining");
   const [raceNames, setRaceNamesRaw] = useFirebaseValue("raceNames", DEFAULT_RACE_NAMES);
   const [hyroxPartners, setHyroxPartners] = useFirebaseValue("hyroxPartners", []);
@@ -2774,7 +2783,7 @@ export default function App() {
           <>
             {tab === "Dashboard" && <Dashboard runData={runData} hyroxData={hyroxData} kartingData={kartingData} bodyData={bodyData} />}
             {tab === "Course à pied" && <RunningTab data={runData} setData={setRunData} raceNames={raceNames} setRaceNames={setRaceNamesRaw} />}
-            {tab === "Hyrox" && <HyroxTab data={hyroxData} setData={setHyroxData} partners={hyroxPartners} setPartners={setHyroxPartners} trainingData={hyroxTrainingData} setTrainingData={setHyroxTrainingData} templates={hyroxTemplates} setTemplates={setHyroxTemplatesRaw} />}
+            {tab === "Hyrox" && <HyroxTab data={hyroxData} setData={setHyroxData} partners={hyroxPartners} setPartners={setHyroxPartners} trainingData={hyroxTrainingData} setTrainingData={setHyroxTrainingData} templates={hyroxTemplates} setTemplates={setHyroxTemplatesRaw2} />}
             {tab === "Karting" && <KartingTab data={kartingData} setData={setKartingData} />}
             {tab === "Poids & Corps" && <BodyTab data={bodyData} setData={setBodyData} />}
           </>
