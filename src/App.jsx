@@ -1542,58 +1542,107 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
               }}>{f}</button>
             ))}
           </div>
-          {sorted.length === 0 ? (
-            <div style={{ color: "#52525b", textAlign: "center", padding: 40, fontSize: 14 }}>Aucune course Hyrox enregistrée</div>
-          ) : sorted.map(r => (
-            <div key={r.id} style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 14, padding: "16px 20px", marginBottom: 10 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                <div>
-                  <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 4 }}>
-                    <Badge color={col.main}>{r.athlete}</Badge>
-                    {r.category && r.category !== "Solo" && <Badge color="#888">{r.category}</Badge>}
-                    {r.partner && <span style={{ color: "#888", fontSize: 12 }}>avec {r.partner}</span>}
-                    <span style={{ color: "#fff", fontWeight: 700, fontSize: 13 }}>{r.eventName || ""}</span>
-                    <span style={{ color: "#888", fontSize: 12 }}>{r.date}</span>
-                  </div>
-                  {r.notes && <div style={{ color: "#888", fontSize: 12 }}>{r.notes}</div>}
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
-                  <ActionButtons accentColor={col.main} onEdit={() => startEdit(r)} onDelete={() => deleteEntry(r.id)} />
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ color: col.main, fontWeight: 800, fontSize: 20 }}>{formatTime(r.totalSecs)}</div>
-                    {r.runSecs && <div style={{ color: "#888", fontSize: 12 }}>Run: {formatTime(r.runSecs)}</div>}
-                    {r.roxzoneSecs && <div style={{ color: "#888", fontSize: 12 }}>Roxzone: {formatTime(r.roxzoneSecs)}</div>}
-                  </div>
-                </div>
-              </div>
-              {r.stationSecs && Object.keys(r.stationSecs).length > 0 && (
-                <div style={{ marginTop: 12 }}>
-                  <div style={{ color: "#71717a", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Stations</div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                    {HYROX_STATIONS.map(s => r.stationSecs[s] ? (
-                      <div key={s} style={{ background: col.light, border: `1px solid ${col.border}`, borderRadius: 8, padding: "4px 10px", fontSize: 12 }}>
-                        <span style={{ color: "#666" }}>{s}: </span>
-                        <span style={{ color: col.main, fontWeight: 700 }}>{formatTime(r.stationSecs[s])}</span>
+          {(() => {
+            // Fusionner courses et entraînements
+            const trainingFiltered = filter === "Tous" ? (trainingData || []) : (trainingData || []).filter(r => r.athlete === filter);
+            const allEntries = [
+              ...sorted.map(r => ({ ...r, _type: "course" })),
+              ...trainingFiltered.map(r => ({ ...r, _type: "training" })),
+            ].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+
+            if (allEntries.length === 0) return (
+              <div style={{ color: "#52525b", textAlign: "center", padding: 40, fontSize: 14 }}>Aucune activité Hyrox enregistrée</div>
+            );
+
+            return allEntries.map(r => {
+              const isCourse = r._type === "course";
+              const tpl = !isCourse ? (templates || []).find(t => String(t.id) === String(r.templateId)) : null;
+
+              return (
+                <div key={r.id} style={{ background: "#1f1f23", border: `1px solid ${isCourse ? col.border : "#303036"}`, borderRadius: 14, padding: "16px 20px", marginBottom: 10 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4, flexWrap: "wrap" }}>
+                        <Badge color={col.main}>{r.athlete}</Badge>
+                        {/* Badge type */}
+                        <Badge color={isCourse ? col.main : "#888"}>{isCourse ? "Course" : "Entraînement"}</Badge>
+                        {isCourse && r.category && r.category !== "Solo" && <Badge color="#888">{r.category}</Badge>}
+                        {isCourse && r.partner && <span style={{ color: "#888", fontSize: 12 }}>avec {r.partner}</span>}
+                        {!isCourse && r.isShared && r.trainingPartner && <span style={{ color: "#888", fontSize: 12 }}>avec {r.trainingPartner}</span>}
+                        <span style={{ color: "#fff", fontWeight: 700, fontSize: 13 }}>
+                          {isCourse ? (r.eventName || "") : (tpl?.name || "—")}
+                        </span>
+                        <span style={{ color: "#888", fontSize: 12 }}>{r.date}</span>
                       </div>
-                    ) : null)}
-                  </div>
-                </div>
-              )}
-              {r.runSecs_splits && Object.values(r.runSecs_splits).some(Boolean) && (
-                <div style={{ marginTop: 10 }}>
-                  <div style={{ color: "#71717a", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Splits de run</div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                    {HYROX_RUNS.map((run, i) => r.runSecs_splits[run] && (
-                      <div key={run} style={{ background: "#27272a", border: "1px solid #1a1a1a", borderRadius: 8, padding: "4px 10px", fontSize: 12 }}>
-                        <span style={{ color: "#888" }}>R{i + 1}: </span>
-                        <span style={{ color: "#aaa", fontWeight: 700 }}>{formatTime(r.runSecs_splits[run])}</span>
+                      {r.notes && <div style={{ color: "#888", fontSize: 12 }}>{r.notes}</div>}
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+                      <ActionButtons accentColor={col.main}
+                        onEdit={() => isCourse ? startEdit(r) : null}
+                        onDelete={() => isCourse ? deleteEntry(r.id) : setTrainingData(d => d.filter(x => x.id !== r.id))}
+                      />
+                      <div style={{ textAlign: "right" }}>
+                        {isCourse ? (
+                          <>
+                            <div style={{ color: col.main, fontWeight: 800, fontSize: 20 }}>{formatTime(r.totalSecs)}</div>
+                            {r.runSecs && <div style={{ color: "#888", fontSize: 12 }}>Run: {formatTime(r.runSecs)}</div>}
+                            {r.roxzoneSecs && <div style={{ color: "#888", fontSize: 12 }}>Roxzone: {formatTime(r.roxzoneSecs)}</div>}
+                          </>
+                        ) : (
+                          <div style={{ color: col.main, fontWeight: 800, fontSize: 20 }}>{r.totalTime || "—"}</div>
+                        )}
                       </div>
-                    ))}
+                    </div>
                   </div>
+
+                  {/* Stations (courses) */}
+                  {isCourse && r.stationSecs && Object.keys(r.stationSecs).length > 0 && (
+                    <div style={{ marginTop: 12 }}>
+                      <div style={{ color: "#71717a", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Stations</div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                        {HYROX_STATIONS.map(s => r.stationSecs[s] ? (
+                          <div key={s} style={{ background: col.light, border: `1px solid ${col.border}`, borderRadius: 8, padding: "4px 10px", fontSize: 12 }}>
+                            <span style={{ color: "#888" }}>{s}: </span>
+                            <span style={{ color: col.main, fontWeight: 700 }}>{formatTime(r.stationSecs[s])}</span>
+                          </div>
+                        ) : null)}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Splits de run (courses) */}
+                  {isCourse && r.runSecs_splits && Object.values(r.runSecs_splits).some(Boolean) && (
+                    <div style={{ marginTop: 10 }}>
+                      <div style={{ color: "#71717a", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Splits de run</div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                        {HYROX_RUNS.map((run, i) => r.runSecs_splits[run] && (
+                          <div key={run} style={{ background: "#27272a", border: "1px solid #303036", borderRadius: 8, padding: "4px 10px", fontSize: 12 }}>
+                            <span style={{ color: "#888" }}>R{i + 1}: </span>
+                            <span style={{ color: "#aaa", fontWeight: 700 }}>{formatTime(r.runSecs_splits[run])}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Segments (entraînements) */}
+                  {!isCourse && tpl && r.segments && Object.keys(r.segments).length > 0 && (
+                    <div style={{ marginTop: 10 }}>
+                      <div style={{ color: "#71717a", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Segments</div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                        {tpl.segments.map((seg, i) => r.segments[i] && (
+                          <div key={i} style={{ background: "#27272a", border: "1px solid #303036", borderRadius: 8, padding: "4px 10px", fontSize: 12 }}>
+                            <span style={{ color: "#888" }}>{seg.distance ? `${seg.distance}${seg.unit} ` : ""}{seg.type}: </span>
+                            <span style={{ color: col.main, fontWeight: 700 }}>{r.segments[i]}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          ))}
+              );
+            });
+          })()}
         </div>
       )}
     </div>
