@@ -1292,7 +1292,7 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
 
       {subTab === "Records" && <HyroxRecords data={data} />}
       {subTab === "Comparaison" && <HyroxComparison data={data} />}
-      {subTab === "Entraînements" && <HyroxTrainingTab data={trainingData || []} setData={setTrainingData} templates={templates || []} setTemplates={setTemplates} />}
+      {subTab === "Entraînements" && <HyroxTrainingTab data={trainingData || []} setData={setTrainingData} templates={templates || []} setTemplates={setTemplates} partners={partners || []} setPartners={setPartners} />}
 
       {subTab === "+" && (
         <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 16, padding: "20px 24px" }}>
@@ -2034,10 +2034,10 @@ function BodyTab({ data, setData }) {
 }
 
 // ── HYROX TRAINING TAB ────────────────────────────────────────────────────────
-const HYROX_STATION_BASES = ["SkiErg", "Sled Push", "Sled Pull", "Burpee Broad Jump", "Rowing", "Farmers Carry", "Sandbag Lunges", "Wall Balls", "Run"];
+const HYROX_STATION_BASES = ["SkiErg", "Sled Push", "Sled Pull", "Burpee Broad Jump", "Rowing", "Farmers Carry", "Sandbag Lunges", "Wall Balls", "Run", "Vélo"];
 const defaultTrainingForm = { date: "", athlete: "Tom", templateId: "", totalTime: "", isShared: false, trainingPartner: "", notes: "", segments: {} };
 
-function HyroxTrainingTab({ data, setData, templates, setTemplates }) {
+function HyroxTrainingTab({ data, setData, templates, setTemplates, partners, setPartners }) {
   const [subTab, setSubTab] = useState("Historique");
   const [form, setForm] = useState(defaultTrainingForm);
   const [editingId, setEditingId] = useState(null);
@@ -2045,10 +2045,21 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates }) {
   const [templateForm, setTemplateForm] = useState({ name: "", segments: [] });
   const [filter, setFilter] = useState("Tous");
   const [compareTemplate, setCompareTemplate] = useState("");
+  const [newPartner, setNewPartner] = useState("");
+  const [showAddPartner, setShowAddPartner] = useState(false);
   const col = SPORT_COLORS["Hyrox"];
 
   const update = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const updateSegment = (idx, v) => setForm(f => ({ ...f, segments: { ...f.segments, [idx]: v } }));
+
+  const addPartner = () => {
+    const trimmed = newPartner.trim();
+    if (!trimmed || (partners || []).includes(trimmed)) return;
+    setPartners([...(partners || []), trimmed]);
+    setNewPartner("");
+    setShowAddPartner(false);
+    setForm(f => ({ ...f, trainingPartner: trimmed }));
+  };
 
   const selectedTemplate = templates.find(t => String(t.id) === String(form.templateId));
 
@@ -2179,10 +2190,34 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates }) {
               {form.isShared && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   <label style={{ color: "#555", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>Partenaire</label>
-                  <select value={form.trainingPartner} onChange={e => update("trainingPartner", e.target.value)} style={inputStyle}>
-                    <option value="">Choisir…</option>
-                    {ATHLETES.filter(a => a !== form.athlete).map(a => <option key={a} value={a}>{a}</option>)}
-                  </select>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <select value={form.trainingPartner} onChange={e => update("trainingPartner", e.target.value)} style={{ ...inputStyle, flex: 1 }}>
+                      <option value="">— Choisir —</option>
+                      {ATHLETES.filter(a => a !== form.athlete).map(a => <option key={a} value={a}>{a}</option>)}
+                      {(partners || []).filter(p => !ATHLETES.includes(p)).map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                    <button onClick={() => setShowAddPartner(v => !v)} style={{
+                      width: 36, height: 36, borderRadius: 8, flexShrink: 0,
+                      border: `1.5px solid ${showAddPartner ? col.main : "#222"}`,
+                      background: showAddPartner ? col.main + "22" : "transparent",
+                      color: showAddPartner ? col.main : "#555",
+                      fontWeight: 900, fontSize: 18, cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>+</button>
+                  </div>
+                  {showAddPartner && (
+                    <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+                      <input value={newPartner} onChange={e => setNewPartner(e.target.value)}
+                        onKeyDown={e => e.key === "Enter" && addPartner()}
+                        placeholder="Prénom du partenaire..."
+                        style={{ ...inputStyle, flex: 1, border: `1px solid ${col.main}44` }} />
+                      <button onClick={addPartner} style={{
+                        padding: "8px 14px", borderRadius: 8, border: "none",
+                        background: col.main, color: "#000", fontWeight: 800, fontSize: 12,
+                        cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
+                      }}>Ajouter</button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
