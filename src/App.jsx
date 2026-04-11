@@ -1102,21 +1102,6 @@ function HyroxRecords({ data, trainingData }) {
     return records.length ? records.reduce((b, r) => r.totalSecs < b.totalSecs ? r : b) : null;
   };
 
-  // Top 10 temps totaux (courses + entraînements si activé)
-  const allEntries = [
-    ...data.filter(r => r.totalSecs).map(r => ({ ...r, isTraining: false })),
-    ...(includeTraining ? (trainingData || []).filter(r => r.totalTime).map(r => ({ ...r, totalSecs: parseTimeInput(r.totalTime), isTraining: true })) : []),
-  ].sort((a, b) => a.totalSecs - b.totalSecs).slice(0, 10);
-
-  // Records par station (toutes sources confondues)
-  const getStationPR = (station, athlete) => {
-    const officialBest = data
-      .filter(r => r.athlete === athlete && r.stationSecs?.[station])
-      .map(r => ({ secs: r.stationSecs[station], date: r.date, eventName: r.eventName, isTraining: false }))
-      .sort((a, b) => a.secs - b.secs)[0] || null;
-    return officialBest;
-  };
-
   const allRaces = [...data].sort((a, b) => new Date(b.date) - new Date(a.date));
 
   return (
@@ -1165,90 +1150,110 @@ function HyroxRecords({ data, trainingData }) {
         })}
       </div>
 
-      {/* Records par station */}
-      {data.some(r => r.stationSecs && Object.values(r.stationSecs).some(Boolean)) && (
-        <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "auto" }}>
-          <div style={{ padding: "14px 20px", borderBottom: "1px solid #1a1a1a", color: "#fff", fontWeight: 800, fontSize: 14 }}>Records par station</div>
-          <div style={{ minWidth: 400, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", background: "#0d0d0d", borderBottom: "1px solid #1a1a1a" }}>
-            {["Station", ...ATHLETES].map(h => (
-              <div key={h} style={{ padding: "10px 16px", color: "#444", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", borderLeft: h !== "Station" ? "1px solid #1a1a1a" : "none" }}>{h}</div>
-            ))}
-          </div>
-          {HYROX_STATIONS.map((station, i) => {
-            const rowBg = i % 2 === 0 ? "#0a0a0a" : "#0d0d0d";
-            const prs = ATHLETES.map(a => getStationPR(station, a));
-            const bestSecs = Math.min(...prs.filter(p => p).map(p => p.secs));
-            return (
-              <div key={station} style={{ minWidth: 400, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderBottom: i < HYROX_STATIONS.length - 1 ? "1px solid #111" : "none" }}>
-                <div style={{ padding: "12px 16px", background: rowBg, color: "#888", fontWeight: 700, fontSize: 13 }}>{station}</div>
-                {ATHLETES.map((a, ai) => {
-                  const pr = prs[ai];
-                  const isBest = pr && pr.secs === bestSecs;
-                  return (
-                    <div key={a} style={{ padding: "12px 16px", background: rowBg, borderLeft: "1px solid #161616" }}>
-                      {pr ? (
-                        <div>
-                          <div style={{ color: isBest ? col.main : "#fff", fontWeight: isBest ? 800 : 600, fontSize: 16 }}>
-                            {formatTime(pr.secs)}{isBest && <span style={{ marginLeft: 5, fontSize: 10, color: col.main }}>★</span>}
-                          </div>
-                          <div style={{ color: "#444", fontSize: 11, marginTop: 2 }}>{pr.eventName ? `${pr.eventName} · ` : ""}{pr.date}</div>
-                        </div>
-                      ) : <span style={{ color: "#2a2a2a" }}>—</span>}
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
-        </div>
-      )}
+      {/* Top 10 par station */}
+      {(() => {
+        // Construit une liste d'entrées par station en agrégeant courses et entraînements
+        const getTop10ForStation = (station) => {
+          const entries = [];
 
-      {/* Top 10 temps totaux */}
-      <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "hidden" }}>
-        <div style={{ padding: "14px 20px", borderBottom: "1px solid #1a1a1a", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ color: "#fff", fontWeight: 800, fontSize: 14 }}>Top 10 — Temps total</span>
-          <button onClick={() => setIncludeTraining(v => !v)} style={{
-            padding: "5px 14px", borderRadius: 999, cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 11,
-            border: `1.5px solid ${includeTraining ? col.main : "#333"}`,
-            background: includeTraining ? col.main + "22" : "transparent",
-            color: includeTraining ? col.main : "#555",
-          }}>
-            {includeTraining ? "✓ " : ""}Inclure entraînements
-          </button>
-        </div>
-        {allEntries.length === 0 ? (
-          <div style={{ color: "#333", textAlign: "center", padding: 32, fontSize: 13 }}>Aucune performance enregistrée</div>
-        ) : (
-          <div>
-            <div style={{ display: "grid", gridTemplateColumns: "40px 80px 1fr 100px 80px", background: "#0d0d0d", borderBottom: "1px solid #1a1a1a" }}>
-              {["#", "Athlète", "Événement", "Temps", "Type"].map(h => (
-                <div key={h} style={{ padding: "10px 14px", color: "#444", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</div>
-              ))}
+          // Depuis les courses officielles
+          data.forEach(r => {
+            if (r.stationSecs?.[station]) {
+              entries.push({ secs: r.stationSecs[station], athlete: r.athlete, date: r.date, label: r.eventName || "Course", isTraining: false, id: r.id });
+            }
+          });
+
+          // Depuis les entraînements — chercher les segments qui correspondent à cette station
+          // On cherche un segment dont le type correspond au nom de base de la station
+          const stationBase = station.replace(/^\d+[a-z]* /, "").replace(/\d+ /, ""); // ex: "SkiErg" depuis "1000m SkiErg"
+          ;(trainingData || []).forEach(r => {
+            if (!r.segments || !r.templateId) return;
+            // On n'a pas accès aux templates ici, on utilise les clés numériques des segments
+            // On cherche dans les clés si un segment a le bon type — pas possible sans template
+            // On utilise à la place stationSecs si jamais ça existe dans un entraînement
+            if (r.stationSecs?.[station]) {
+              entries.push({ secs: r.stationSecs[station], athlete: r.athlete, date: r.date, label: "Entraînement", isTraining: true, id: String(r.id) + station });
+            }
+          });
+
+          return entries.sort((a, b) => a.secs - b.secs).slice(0, 10);
+        };
+
+        const hasAnyStation = HYROX_STATIONS.some(s => getTop10ForStation(s).length > 0);
+        if (!hasAnyStation) return null;
+
+        return (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ color: "#fff", fontWeight: 800, fontSize: 14 }}>Top 10 par station</div>
+              <button onClick={() => setIncludeTraining(v => !v)} style={{
+                padding: "5px 14px", borderRadius: 999, cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 11,
+                border: `1.5px solid ${includeTraining ? col.main : "#333"}`,
+                background: includeTraining ? col.main + "22" : "transparent",
+                color: includeTraining ? col.main : "#555",
+              }}>
+                {includeTraining ? "✓ " : ""}Inclure entraînements
+              </button>
             </div>
-            {allEntries.map((r, i) => {
-              const rankColor = i === 0 ? "#FFD700" : i === 1 ? "#C0C0C0" : i === 2 ? "#CD7F32" : "#555";
+            {HYROX_STATIONS.map(station => {
+              const allForStation = [];
+
+              // Courses officielles
+              data.forEach(r => {
+                if (r.stationSecs?.[station]) {
+                  allForStation.push({ secs: r.stationSecs[station], athlete: r.athlete, date: r.date, label: r.eventName || "Course officielle", isTraining: false, id: r.id + station });
+                }
+              });
+
+              // Entraînements (si inclus)
+              if (includeTraining) {
+                (trainingData || []).forEach(r => {
+                  if (r.stationSecs?.[station]) {
+                    allForStation.push({ secs: r.stationSecs[station], athlete: r.athlete, date: r.date, label: "Entraînement", isTraining: true, id: String(r.id) + station });
+                  }
+                });
+              }
+
+              const top10 = allForStation.sort((a, b) => a.secs - b.secs).slice(0, 10);
+              if (!top10.length) return null;
+
               return (
-                <div key={r.id} style={{ display: "grid", gridTemplateColumns: "40px 80px 1fr 100px 80px", borderBottom: i < allEntries.length - 1 ? "1px solid #111" : "none", background: i % 2 === 0 ? "#0a0a0a" : "#0d0d0d" }}>
-                  <div style={{ padding: "12px 14px", color: rankColor, fontWeight: 800, fontSize: 14 }}>{i + 1}</div>
-                  <div style={{ padding: "12px 14px" }}><Badge color={col.main}>{r.athlete}</Badge></div>
-                  <div style={{ padding: "12px 14px" }}>
-                    <div style={{ color: "#fff", fontWeight: 600, fontSize: 13 }}>{r.eventName || (r.isTraining ? "Entraînement" : "—")}</div>
-                    <div style={{ color: "#555", fontSize: 11 }}>{r.date}</div>
+                <div key={station} style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "hidden" }}>
+                  <div style={{ padding: "12px 20px", borderBottom: "1px solid #1a1a1a", background: "#0d0d0d", display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ color: col.main, fontWeight: 800, fontSize: 13 }}>{station}</span>
                   </div>
-                  <div style={{ padding: "12px 14px", color: i === 0 ? col.main : "#fff", fontWeight: i === 0 ? 800 : 600, fontSize: 15 }}>
-                    {formatTime(r.totalSecs)}{i === 0 && <span style={{ marginLeft: 5, fontSize: 10, color: col.main }}>★</span>}
+                  <div style={{ display: "grid", gridTemplateColumns: "36px 80px 1fr 100px 80px", background: "#0d0d0d", borderBottom: "1px solid #1a1a1a" }}>
+                    {["#", "Athlète", "Source", "Temps", "Type"].map(h => (
+                      <div key={h} style={{ padding: "8px 12px", color: "#444", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</div>
+                    ))}
                   </div>
-                  <div style={{ padding: "12px 14px" }}>
-                    <span style={{ color: r.isTraining ? "#888" : col.main, fontSize: 11, fontWeight: 700 }}>
-                      {r.isTraining ? "Entraîn." : "Course"}
-                    </span>
-                  </div>
+                  {top10.map((entry, i) => {
+                    const rankColor = i === 0 ? "#FFD700" : i === 1 ? "#C0C0C0" : i === 2 ? "#CD7F32" : "#444";
+                    return (
+                      <div key={entry.id} style={{ display: "grid", gridTemplateColumns: "36px 80px 1fr 100px 80px", borderBottom: i < top10.length - 1 ? "1px solid #111" : "none", background: i % 2 === 0 ? "#0a0a0a" : "#0d0d0d" }}>
+                        <div style={{ padding: "10px 12px", color: rankColor, fontWeight: 800, fontSize: 13 }}>{i + 1}</div>
+                        <div style={{ padding: "10px 12px" }}><Badge color={col.main}>{entry.athlete}</Badge></div>
+                        <div style={{ padding: "10px 12px" }}>
+                          <div style={{ color: "#888", fontSize: 12 }}>{entry.label}</div>
+                          <div style={{ color: "#555", fontSize: 11 }}>{entry.date}</div>
+                        </div>
+                        <div style={{ padding: "10px 12px", color: i === 0 ? col.main : "#fff", fontWeight: i === 0 ? 800 : 600, fontSize: 14 }}>
+                          {formatTime(entry.secs)}{i === 0 && <span style={{ marginLeft: 4, fontSize: 9, color: col.main }}>★</span>}
+                        </div>
+                        <div style={{ padding: "10px 12px" }}>
+                          <span style={{ color: entry.isTraining ? "#555" : col.main + "99", fontSize: 10, fontWeight: 700 }}>
+                            {entry.isTraining ? "Entraîn." : "Course"}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               );
             })}
           </div>
-        )}
-      </div>
+        );
+      })()}
 
       {/* Progression chronologique */}
       {allRaces.length > 0 && (
