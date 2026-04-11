@@ -2118,12 +2118,27 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
                     <div style={{ marginTop: 10 }}>
                       <div style={{ color: "#71717a", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Segments</div>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                        {tpl.segments.map((seg, i) => r.segments[i] && (
-                          <div key={i} style={{ background: "#27272a", border: "1px solid #303036", borderRadius: 8, padding: "4px 10px", fontSize: 12 }}>
-                            <span style={{ color: "#888" }}>{seg.distance ? `${seg.distance}${seg.unit} ` : ""}{seg.type}: </span>
-                            <span style={{ color: col.main, fontWeight: 700 }}>{r.segments[i]}</span>
-                          </div>
-                        ))}
+                        {tpl.segments.map((seg, i) => {
+                          if (!r.segments[i]) return null;
+                          const isRun = seg.type === "Run" || seg.type === "Vélo";
+                          const secs = parseTimeInput(r.segments[i]);
+                          const distKm = seg.distance
+                            ? seg.unit === "km" ? parseFloat(seg.distance) : parseFloat(seg.distance) / 1000
+                            : null;
+                          const pace = isRun && secs && distKm ? (() => {
+                            const spk = secs / distKm;
+                            const m = Math.floor(spk / 60);
+                            const s = Math.round(spk % 60);
+                            return `${m}:${String(s).padStart(2,"0")}/km`;
+                          })() : null;
+                          return (
+                            <div key={i} style={{ background: "#27272a", border: "1px solid #303036", borderRadius: 8, padding: "4px 10px", fontSize: 12 }}>
+                              <span style={{ color: "#888" }}>{seg.distance ? `${seg.distance}${seg.unit} ` : ""}{seg.type}: </span>
+                              <span style={{ color: col.main, fontWeight: 700 }}>{r.segments[i]}</span>
+                              {pace && <span style={{ color: "#a78bfa", fontSize: 10, fontWeight: 600, marginLeft: 5 }}>{pace}</span>}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
