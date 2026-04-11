@@ -1093,13 +1093,23 @@ function HyroxComparison({ data }) {
 }
 
 // ── HYROX RECORDS ─────────────────────────────────────────────────────────────
-function HyroxRecords({ data, trainingData }) {
+function HyroxRecords({ data, trainingData, templates }) {
   const col = SPORT_COLORS["Hyrox"];
   const [includeTraining, setIncludeTraining] = useState(true);
 
   const getPR = (athlete) => {
     const records = data.filter(r => r.athlete === athlete && r.totalSecs);
     return records.length ? records.reduce((b, r) => r.totalSecs < b.totalSecs ? r : b) : null;
+  };
+
+  // Correspondance station Hyrox → type de segment dans les templates
+  // Ex: "1000m SkiErg" → correspond à un segment de type "SkiErg" avec distance "1000"
+  const matchesStation = (station, seg) => {
+    const stationBase = HYROX_STATIONS.indexOf(station);
+    const stationTypes = ["SkiErg", "Sled Push", "Sled Pull", "Burpee Broad Jump", "Rowing", "Farmers Carry", "Sandbag Lunges", "Wall Balls"];
+    const officialDist = ["1000", "50", "50", "80", "1000", "200", "100", "100"];
+    if (stationBase === -1) return false;
+    return seg.type === stationTypes[stationBase] && seg.distance === officialDist[stationBase];
   };
 
   const allRaces = [...data].sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -1152,29 +1162,54 @@ function HyroxRecords({ data, trainingData }) {
 
       {/* Top 10 par station */}
       {(() => {
-        // Construit une liste d'entrées par station en agrégeant courses et entraînements
         const getTop10ForStation = (station) => {
           const entries = [];
 
           // Depuis les courses officielles
           data.forEach(r => {
             if (r.stationSecs?.[station]) {
-              entries.push({ secs: r.stationSecs[station], athlete: r.athlete, date: r.date, label: r.eventName || "Course", isTraining: false, id: r.id });
+              const modeLabel = r.category && r.category !== "Solo"
+                ? `${r.category}${r.partner ? ` · ${r.partner}` : ""}`
+                : "Solo";
+              entries.push({
+                secs: r.stationSecs[station],
+                athlete: r.athlete,
+                date: r.date,
+                label: r.eventName || "Course officielle",
+                mode: modeLabel,
+                isTraining: false,
+                id: r.id + station,
+              });
             }
           });
 
-          // Depuis les entraînements — chercher les segments qui correspondent à cette station
-          // On cherche un segment dont le type correspond au nom de base de la station
-          const stationBase = station.replace(/^\d+[a-z]* /, "").replace(/\d+ /, ""); // ex: "SkiErg" depuis "1000m SkiErg"
-          ;(trainingData || []).forEach(r => {
-            if (!r.segments || !r.templateId) return;
-            // On n'a pas accès aux templates ici, on utilise les clés numériques des segments
-            // On cherche dans les clés si un segment a le bon type — pas possible sans template
-            // On utilise à la place stationSecs si jamais ça existe dans un entraînement
-            if (r.stationSecs?.[station]) {
-              entries.push({ secs: r.stationSecs[station], athlete: r.athlete, date: r.date, label: "Entraînement", isTraining: true, id: String(r.id) + station });
-            }
-          });
+          // Depuis les entraînements via template
+          if (includeTraining) {
+            (trainingData || []).forEach(r => {
+              if (!r.segments || !r.templateId) return;
+              const tpl = templates.find(t => String(t.id) === String(r.templateId));
+              if (!tpl) return;
+              tpl.segments.forEach((seg, idx) => {
+                if (!matchesStation(station, seg)) return;
+                const timeStr = r.segments?.[idx];
+                if (!timeStr) return;
+                const secs = parseTimeInput(timeStr);
+                if (!secs) return;
+                const modeLabel = r.isShared
+                  ? `Partagé${r.trainingPartner ? ` · ${r.trainingPartner}` : ""}`
+                  : "Solo";
+                entries.push({
+                  secs,
+                  athlete: r.athlete,
+                  date: r.date,
+                  label: tpl.name,
+                  mode: modeLabel,
+                  isTraining: true,
+                  id: String(r.id) + station + idx,
+                });
+              });
+            });
+          }
 
           return entries.sort((a, b) => a.secs - b.secs).slice(0, 10);
         };
@@ -1196,46 +1231,27 @@ function HyroxRecords({ data, trainingData }) {
               </button>
             </div>
             {HYROX_STATIONS.map(station => {
-              const allForStation = [];
-
-              // Courses officielles
-              data.forEach(r => {
-                if (r.stationSecs?.[station]) {
-                  allForStation.push({ secs: r.stationSecs[station], athlete: r.athlete, date: r.date, label: r.eventName || "Course officielle", isTraining: false, id: r.id + station });
-                }
-              });
-
-              // Entraînements (si inclus)
-              if (includeTraining) {
-                (trainingData || []).forEach(r => {
-                  if (r.stationSecs?.[station]) {
-                    allForStation.push({ secs: r.stationSecs[station], athlete: r.athlete, date: r.date, label: "Entraînement", isTraining: true, id: String(r.id) + station });
-                  }
-                });
-              }
-
-              const top10 = allForStation.sort((a, b) => a.secs - b.secs).slice(0, 10);
+              const top10 = getTop10ForStation(station);
               if (!top10.length) return null;
-
               return (
                 <div key={station} style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "hidden" }}>
-                  <div style={{ padding: "12px 20px", borderBottom: "1px solid #1a1a1a", background: "#0d0d0d", display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ padding: "12px 20px", borderBottom: "1px solid #1a1a1a", background: "#0d0d0d" }}>
                     <span style={{ color: col.main, fontWeight: 800, fontSize: 13 }}>{station}</span>
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "36px 80px 1fr 100px 80px", background: "#0d0d0d", borderBottom: "1px solid #1a1a1a" }}>
-                    {["#", "Athlète", "Source", "Temps", "Type"].map(h => (
+                  <div style={{ display: "grid", gridTemplateColumns: "36px 80px 1fr 90px 80px", background: "#0d0d0d", borderBottom: "1px solid #1a1a1a" }}>
+                    {["#", "Athlète", "Source · Mode", "Temps", "Type"].map(h => (
                       <div key={h} style={{ padding: "8px 12px", color: "#444", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</div>
                     ))}
                   </div>
                   {top10.map((entry, i) => {
                     const rankColor = i === 0 ? "#FFD700" : i === 1 ? "#C0C0C0" : i === 2 ? "#CD7F32" : "#444";
                     return (
-                      <div key={entry.id} style={{ display: "grid", gridTemplateColumns: "36px 80px 1fr 100px 80px", borderBottom: i < top10.length - 1 ? "1px solid #111" : "none", background: i % 2 === 0 ? "#0a0a0a" : "#0d0d0d" }}>
+                      <div key={entry.id} style={{ display: "grid", gridTemplateColumns: "36px 80px 1fr 90px 80px", borderBottom: i < top10.length - 1 ? "1px solid #111" : "none", background: i % 2 === 0 ? "#0a0a0a" : "#0d0d0d" }}>
                         <div style={{ padding: "10px 12px", color: rankColor, fontWeight: 800, fontSize: 13 }}>{i + 1}</div>
                         <div style={{ padding: "10px 12px" }}><Badge color={col.main}>{entry.athlete}</Badge></div>
                         <div style={{ padding: "10px 12px" }}>
                           <div style={{ color: "#888", fontSize: 12 }}>{entry.label}</div>
-                          <div style={{ color: "#555", fontSize: 11 }}>{entry.date}</div>
+                          <div style={{ color: "#555", fontSize: 11 }}>{entry.mode} · {entry.date}</div>
                         </div>
                         <div style={{ padding: "10px 12px", color: i === 0 ? col.main : "#fff", fontWeight: i === 0 ? 800 : 600, fontSize: 14 }}>
                           {formatTime(entry.secs)}{i === 0 && <span style={{ marginLeft: 4, fontSize: 9, color: col.main }}>★</span>}
@@ -1391,7 +1407,7 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
         }}>+</button>
       </div>
 
-      {subTab === "Records" && <HyroxRecords data={data} trainingData={trainingData || []} />}
+      {subTab === "Records" && <HyroxRecords data={data} trainingData={trainingData || []} templates={templates || []} />}
       {subTab === "Comparaison" && <HyroxComparison data={data} />}
       {subTab === "Entraînements" && <HyroxTrainingTab data={trainingData || []} setData={setTrainingData} templates={templates || []} setTemplates={setTemplates} partners={partners || []} setPartners={setPartners} />}
 
