@@ -2901,14 +2901,34 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates, partners, se
             <div>
               <div style={{ color: "#888", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Temps par segment (optionnel)</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8, marginBottom: 16 }}>
-                {selectedTemplate.segments.map((seg, i) => (
-                  <div key={i} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <label style={{ color: "#666", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>
-                      {seg.distance ? `${seg.distance}${seg.unit} ` : ""}{seg.type}
-                    </label>
-                    <input value={form.segments?.[i] || ""} onChange={e => updateSegment(i, e.target.value)} placeholder="mm:ss" style={inputStyle} />
-                  </div>
-                ))}
+                {selectedTemplate.segments.map((seg, i) => {
+                  const timeStr = form.segments?.[i] || "";
+                  const secs = parseTimeInput(timeStr);
+                  // Calcul allure pour les segments Run ou Vélo en m ou km
+                  const isRun = seg.type === "Run" || seg.type === "Vélo";
+                  const distKm = seg.distance
+                    ? seg.unit === "km" ? parseFloat(seg.distance) : parseFloat(seg.distance) / 1000
+                    : null;
+                  const pace = isRun && secs && distKm
+                    ? (() => {
+                        const secsPerKm = secs / distKm;
+                        const m = Math.floor(secsPerKm / 60);
+                        const s = Math.round(secsPerKm % 60);
+                        return `${m}:${String(s).padStart(2, "0")}/km`;
+                      })()
+                    : null;
+                  return (
+                    <div key={i} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      <label style={{ color: "#666", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>
+                        {seg.distance ? `${seg.distance}${seg.unit} ` : ""}{seg.type}
+                      </label>
+                      <input value={timeStr} onChange={e => updateSegment(i, e.target.value)} placeholder="mm:ss" style={inputStyle} />
+                      {pace && (
+                        <div style={{ color: col.main, fontSize: 11, fontWeight: 700 }}>→ {pace}</div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
