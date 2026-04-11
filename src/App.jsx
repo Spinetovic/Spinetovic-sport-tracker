@@ -1131,12 +1131,12 @@ function HyroxRecords({ data }) {
                   {pr.stationSecs && Object.values(pr.stationSecs).some(Boolean) && (
                     <div style={{ marginTop: 12 }}>
                       <div style={{ color: "#444", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>Stations</div>
-                      {Object.entries(pr.stationSecs).map(([s, t]) => t && (
+                      {HYROX_STATIONS.map(s => pr.stationSecs[s] ? (
                         <div key={s} style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                           <span style={{ color: "#555", fontSize: 12 }}>{s}</span>
-                          <span style={{ color: col.main, fontWeight: 700, fontSize: 12 }}>{formatTime(t)}</span>
+                          <span style={{ color: col.main, fontWeight: 700, fontSize: 12 }}>{formatTime(pr.stationSecs[s])}</span>
                         </div>
-                      ))}
+                      ) : null)}
                     </div>
                   )}
                 </>
@@ -1453,12 +1453,12 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
                 <div style={{ marginTop: 12 }}>
                   <div style={{ color: "#444", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Stations</div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                    {Object.entries(r.stationSecs).map(([s, t]) => t && (
+                    {HYROX_STATIONS.map(s => r.stationSecs[s] ? (
                       <div key={s} style={{ background: col.light, border: `1px solid ${col.border}`, borderRadius: 8, padding: "4px 10px", fontSize: 12 }}>
                         <span style={{ color: "#666" }}>{s}: </span>
-                        <span style={{ color: col.main, fontWeight: 700 }}>{formatTime(t)}</span>
+                        <span style={{ color: col.main, fontWeight: 700 }}>{formatTime(r.stationSecs[s])}</span>
                       </div>
-                    ))}
+                    ) : null)}
                   </div>
                 </div>
               )}
