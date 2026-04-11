@@ -1374,20 +1374,22 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {/* Sub-tabs */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", gap: 4, background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 10, padding: 4 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ display: "flex", gap: 4, background: "#1f1f23", border: "1px solid #303036", borderRadius: 10, padding: 4, overflowX: "auto", flex: 1, minWidth: 0 }}>
           {["Historique", "Records", "Comparaison", "Entraînements"].map(t => (
             <button key={t} onClick={() => setSubTab(t)} style={{
-              padding: "7px 18px",
+              padding: "7px 12px",
               borderRadius: 7,
               border: "none",
               background: subTab === t ? col.main : "transparent",
               color: subTab === t ? "#000" : "#888",
               fontWeight: 700,
-              fontSize: 13,
+              fontSize: 12,
               cursor: "pointer",
               fontFamily: "inherit",
               transition: "all 0.15s",
+              whiteSpace: "nowrap",
+              flexShrink: 0,
             }}>{t}</button>
           ))}
         </div>
@@ -1404,6 +1406,7 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
           fontFamily: "inherit",
           transition: "all 0.15s",
           display: "flex", alignItems: "center", justifyContent: "center",
+          flexShrink: 0,
         }}>+</button>
       </div>
 
