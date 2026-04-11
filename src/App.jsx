@@ -60,7 +60,7 @@ function RankDisplay({ rank, total, color }) {
       {rank && total ? (
         <>
           <span style={{ color: color || "#fff", fontWeight: 800, fontSize: 14 }}>{rank}</span>
-          <span style={{ color: "#444", fontSize: 12 }}>/ {total}</span>
+          <span style={{ color: "#71717a", fontSize: 12 }}>/ {total}</span>
           {pct && <span style={{ color: "#666", fontSize: 11, marginLeft: 2 }}>({pct}%)</span>}
         </>
       ) : rank ? (
@@ -76,12 +76,12 @@ function ActionButtons({ onEdit, onDelete, accentColor }) {
     <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
       <button onClick={onEdit} title="Modifier" style={{
         width: 30, height: 30, borderRadius: 7, border: "1px solid #222",
-        background: "transparent", color: "#555", fontSize: 14, cursor: "pointer",
+        background: "transparent", color: "#888", fontSize: 14, cursor: "pointer",
         display: "flex", alignItems: "center", justifyContent: "center",
         transition: "all 0.15s",
       }}
         onMouseEnter={e => { e.currentTarget.style.borderColor = accentColor; e.currentTarget.style.color = accentColor; }}
-        onMouseLeave={e => { e.currentTarget.style.borderColor = "#222"; e.currentTarget.style.color = "#555"; }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = "#3f3f46"; e.currentTarget.style.color = "#888"; }}
       >✎</button>
       {confirmDelete ? (
         <>
@@ -92,18 +92,18 @@ function ActionButtons({ onEdit, onDelete, accentColor }) {
           }}>Confirmer</button>
           <button onClick={() => setConfirmDelete(false)} style={{
             padding: "4px 10px", borderRadius: 7, border: "1px solid #222",
-            background: "transparent", color: "#555", fontWeight: 700, fontSize: 11, cursor: "pointer",
+            background: "transparent", color: "#888", fontWeight: 700, fontSize: 11, cursor: "pointer",
           }}>Annuler</button>
         </>
       ) : (
         <button onClick={() => setConfirmDelete(true)} title="Supprimer" style={{
           width: 30, height: 30, borderRadius: 7, border: "1px solid #222",
-          background: "transparent", color: "#555", fontSize: 16, cursor: "pointer",
+          background: "transparent", color: "#888", fontSize: 16, cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center",
           transition: "all 0.15s",
         }}
           onMouseEnter={e => { e.currentTarget.style.borderColor = "#f87144"; e.currentTarget.style.color = "#f87144"; }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = "#222"; e.currentTarget.style.color = "#555"; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = "#3f3f46"; e.currentTarget.style.color = "#888"; }}
         >×</button>
       )}
     </div>
@@ -159,7 +159,7 @@ function Badge({ color, children }) {
 function StatCard({ label, value, sub, color }) {
   return (
     <div style={{
-      background: "#0f0f0f",
+      background: "#1f1f23",
       border: `1px solid #1e1e1e`,
       borderRadius: "12px",
       padding: "16px 20px",
@@ -168,7 +168,7 @@ function StatCard({ label, value, sub, color }) {
     }}>
       <div style={{ color: "#666", fontSize: "11px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>{label}</div>
       <div style={{ color: color || "#fff", fontSize: "26px", fontWeight: 800, lineHeight: 1 }}>{value || "—"}</div>
-      {sub && <div style={{ color: "#555", fontSize: "12px", marginTop: 4 }}>{sub}</div>}
+      {sub && <div style={{ color: "#888", fontSize: "12px", marginTop: 4 }}>{sub}</div>}
     </div>
   );
 }
@@ -203,7 +203,7 @@ function Input({ label, type = "text", value, onChange, placeholder, style = {} 
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
         style={{
-          background: "#0d0d0d",
+          background: "#27272a",
           border: "1px solid #222",
           borderRadius: 8,
           padding: "9px 12px",
@@ -227,7 +227,7 @@ function Select({ label, value, onChange, options, style = {} }) {
         value={value}
         onChange={e => onChange(e.target.value)}
         style={{
-          background: "#0d0d0d",
+          background: "#27272a",
           border: "1px solid #222",
           borderRadius: 8,
           padding: "9px 12px",
@@ -255,7 +255,7 @@ function Textarea({ label, value, onChange }) {
         onChange={e => onChange(e.target.value)}
         rows={2}
         style={{
-          background: "#0d0d0d",
+          background: "#27272a",
           border: "1px solid #222",
           borderRadius: 8,
           padding: "9px 12px",
@@ -301,28 +301,28 @@ function RunningRecords({ data }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       {/* View toggle */}
-      <div style={{ display: "flex", gap: 4, background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 10, padding: 4, width: "fit-content" }}>
+      <div style={{ display: "flex", gap: 4, background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 10, padding: 4, width: "fit-content" }}>
         {["PRs", "Progression"].map(v => (
           <button key={v} onClick={() => setView(v)} style={{
             padding: "6px 16px", borderRadius: 7, border: "none",
             background: view === v ? col.main : "transparent",
-            color: view === v ? "#000" : "#555",
+            color: view === v ? "#000" : "#888",
             fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
           }}>{v}</button>
         ))}
       </div>
 
       {view === "PRs" && <>
-        <div style={{ color: "#555", fontSize: 13 }}>Meilleur temps enregistré par distance et par athlète.</div>
-        <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "auto" }}>
-          <div style={{ minWidth: 420, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", background: "#0a0a0a" }}>
-          <div style={{ padding: "12px 20px", borderBottom: "1px solid #1a1a1a", color: "#444", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>Distance</div>
+        <div style={{ color: "#888", fontSize: 13 }}>Meilleur temps enregistré par distance et par athlète.</div>
+        <div style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "auto" }}>
+          <div style={{ minWidth: 420, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", background: "#1f1f23" }}>
+          <div style={{ padding: "12px 20px", borderBottom: "1px solid #1a1a1a", color: "#71717a", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>Distance</div>
           {ATHLETES.map(a => (
             <div key={a} style={{ padding: "12px 20px", borderBottom: "1px solid #1a1a1a", borderLeft: "1px solid #1a1a1a", color: "#fff", fontSize: 13, fontWeight: 800 }}>{a}</div>
           ))}
           {RUNNING_PR_DISTANCES.map((dist, i) => {
             const isLast = i === RUNNING_PR_DISTANCES.length - 1;
-            const rowBg = i % 2 === 0 ? "#0a0a0a" : "#0d0d0d";
+            const rowBg = i % 2 === 0 ? "#1f1f23" : "#27272a";
             return [
               <div key={dist + "_label"} style={{ padding: "16px 20px", background: rowBg, borderBottom: isLast ? "none" : "1px solid #161616" }}>
                 <span style={{ color: "#888", fontWeight: 700, fontSize: 14 }}>{dist}</span>
@@ -334,9 +334,9 @@ function RunningRecords({ data }) {
                     {pr ? (
                       <div>
                         <div style={{ color: col.main, fontWeight: 800, fontSize: 18 }}>{formatTime(pr.secs)}</div>
-                        <div style={{ color: "#444", fontSize: 11, marginTop: 2 }}>{pr.date}{pr.pace ? ` · ${pr.pace}/km` : ""}</div>
+                        <div style={{ color: "#71717a", fontSize: 11, marginTop: 2 }}>{pr.date}{pr.pace ? ` · ${pr.pace}/km` : ""}</div>
                       </div>
-                    ) : <span style={{ color: "#2a2a2a", fontSize: 20, fontWeight: 800 }}>—</span>}
+                    ) : <span style={{ color: "#3f3f46", fontSize: 20, fontWeight: 800 }}>—</span>}
                   </div>
                 );
               })
@@ -346,7 +346,7 @@ function RunningRecords({ data }) {
         </div>
 
         {RUNNING_PR_DISTANCES.some(d => ATHLETES.some(a => getPR(a, d))) && (
-          <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 14, padding: "20px 24px" }}>
+          <div style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 14, padding: "20px 24px" }}>
             <div style={{ color: "#fff", fontWeight: 800, fontSize: 14, marginBottom: 16 }}>Comparaison visuelle</div>
             {RUNNING_PR_DISTANCES.map(dist => {
               const prs = ATHLETES.map(a => ({ athlete: a, pr: getPR(a, dist) })).filter(x => x.pr);
@@ -358,7 +358,7 @@ function RunningRecords({ data }) {
                   {prs.map(({ athlete, pr }) => (
                     <div key={athlete} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
                       <div style={{ width: 60, color: "#777", fontSize: 12, fontWeight: 600 }}>{athlete}</div>
-                      <div style={{ flex: 1, background: "#111", borderRadius: 4, height: 8, overflow: "hidden" }}>
+                      <div style={{ flex: 1, background: "#2a2a2e", borderRadius: 4, height: 8, overflow: "hidden" }}>
                         <div style={{ width: `${(pr.secs / maxSecs) * 100}%`, height: "100%", background: col.main, borderRadius: 4, transition: "width 0.6s ease" }} />
                       </div>
                       <div style={{ color: col.main, fontWeight: 700, fontSize: 13, width: 80, textAlign: "right" }}>{formatTime(pr.secs)}</div>
@@ -380,8 +380,8 @@ function RunningRecords({ data }) {
               value={selectedRace}
               onChange={e => { setSelectedRace(e.target.value); setSelectedRaceNames(null); }}
               style={{
-                background: "#0d0d0d", border: "1px solid #222", borderRadius: 8,
-                padding: "10px 14px", color: selectedRace ? "#fff" : "#555", fontSize: 14,
+                background: "#27272a", border: "1px solid #222", borderRadius: 8,
+                padding: "10px 14px", color: selectedRace ? "#fff" : "#888", fontSize: 14,
                 outline: "none", fontFamily: "inherit", cursor: "pointer", maxWidth: 320,
               }}
             >
@@ -402,7 +402,7 @@ function RunningRecords({ data }) {
 
           {selectedRace && (() => {
             const allRuns = getProgressionRuns(selectedRace);
-            if (!allRuns.length) return <div style={{ color: "#333", textAlign: "center", padding: 40 }}>Aucune donnée pour cette sélection.</div>;
+            if (!allRuns.length) return <div style={{ color: "#52525b", textAlign: "center", padding: 40 }}>Aucune donnée pour cette sélection.</div>;
 
             // Noms de courses disponibles dans cette sélection (si vue par distance)
             const availableRaceNames = [...new Set(allRuns.filter(r => r.raceName).map(r => r.raceName))];
@@ -426,7 +426,7 @@ function RunningRecords({ data }) {
 
             const allSecs = runs.map(r => r.secs);
             if (!runs.length) return (
-              <div style={{ color: "#444", textAlign: "center", padding: 40, fontSize: 13 }}>
+              <div style={{ color: "#71717a", textAlign: "center", padding: 40, fontSize: 13 }}>
                 Aucune sortie pour cette sélection de courses.
               </div>
             );
@@ -443,17 +443,17 @@ function RunningRecords({ data }) {
 
                 {/* Filtre par nom de course (si vue par distance avec plusieurs courses) */}
                 {isDistanceView && availableRaceNames.length > 1 && (
-                  <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 12, padding: "12px 16px" }}>
-                    <div style={{ color: "#555", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Filtrer par course</div>
+                  <div style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 12, padding: "12px 16px" }}>
+                    <div style={{ color: "#888", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Filtrer par course</div>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                       {availableRaceNames.map(name => {
                         const isActive = activeNames.includes(name);
                         return (
                           <button key={name} onClick={() => toggleRaceName(name)} style={{
                             padding: "5px 14px", borderRadius: 999,
-                            border: `1.5px solid ${isActive ? col.main : "#222"}`,
+                            border: `1.5px solid ${isActive ? col.main : "#3f3f46"}`,
                             background: isActive ? col.main + "22" : "transparent",
-                            color: isActive ? col.main : "#555",
+                            color: isActive ? col.main : "#888",
                             fontWeight: 700, fontSize: 12, cursor: "pointer",
                             fontFamily: "inherit", transition: "all 0.15s",
                           }}>
@@ -463,7 +463,7 @@ function RunningRecords({ data }) {
                       })}
                       <button onClick={() => setSelectedRaceNames(availableRaceNames)} style={{
                         padding: "5px 14px", borderRadius: 999, border: "1px solid #1a1a1a",
-                        background: "transparent", color: "#333", fontWeight: 600, fontSize: 11,
+                        background: "transparent", color: "#52525b", fontWeight: 600, fontSize: 11,
                         cursor: "pointer", fontFamily: "inherit",
                       }}>Tout sélectionner</button>
                     </div>
@@ -500,25 +500,25 @@ function RunningRecords({ data }) {
                   const yLabels = [maxSecs, minSecs + (maxSecs - minSecs) / 2, minSecs];
 
                   return (
-                    <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 14, padding: "8px 0 0", overflow: "hidden" }}>
+                    <div style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 14, padding: "8px 0 0", overflow: "hidden" }}>
                       <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: "block" }}>
                         {/* Grid lines horizontales */}
                         {yLabels.map((s, i) => {
                           const y = toY(s);
                           return (
                             <g key={i}>
-                              <line x1={PAD_L} y1={y} x2={W - PAD_R} y2={y} stroke="#1e1e1e" strokeWidth="1" />
-                              <text x={PAD_L - 8} y={y + 4} fill="#555" fontSize="11" textAnchor="end">{formatTime(Math.round(s))}</text>
+                              <line x1={PAD_L} y1={y} x2={W - PAD_R} y2={y} stroke="#2e2e33" strokeWidth="1" />
+                              <text x={PAD_L - 8} y={y + 4} fill="#888" fontSize="11" textAnchor="end">{formatTime(Math.round(s))}</text>
                             </g>
                           );
                         })}
 
                         {/* Axe X */}
-                        <line x1={PAD_L} y1={H - PAD_B} x2={W - PAD_R} y2={H - PAD_B} stroke="#222" strokeWidth="1" />
+                        <line x1={PAD_L} y1={H - PAD_B} x2={W - PAD_R} y2={H - PAD_B} stroke="#3f3f46" strokeWidth="1" />
 
                         {/* Labels X */}
                         {xLabels.map((d, i) => (
-                          <text key={d} x={toX(d)} y={H - PAD_B + 18} fill="#555" fontSize="11" textAnchor="middle">{d.slice(0, 7)}</text>
+                          <text key={d} x={toX(d)} y={H - PAD_B + 18} fill="#888" fontSize="11" textAnchor="middle">{d.slice(0, 7)}</text>
                         ))}
 
                         {/* Courbes et points par athlète */}
@@ -547,7 +547,7 @@ function RunningRecords({ data }) {
                                 return (
                                   <g key={i}>
                                     {pr && <circle cx={p.x} cy={p.y} r="10" fill={acol} opacity="0.15" />}
-                                    <circle cx={p.x} cy={p.y} r={pr ? 6 : 5} fill={acol} stroke="#0a0a0a" strokeWidth="2" />
+                                    <circle cx={p.x} cy={p.y} r={pr ? 6 : 5} fill={acol} stroke="#1f1f23" strokeWidth="2" />
                                     {pr && <text x={p.x} y={p.y - 14} fill={acol} fontSize="10" textAnchor="middle" fontWeight="700">★PR</text>}
                                     {/* Tooltip temps */}
                                     <text x={p.x} y={p.y + (p.y < PAD_T + 30 ? 20 : -14)} fill={acol} fontSize="10" textAnchor="middle" opacity="0.8">
@@ -565,10 +565,10 @@ function RunningRecords({ data }) {
                 })()}
 
                 {/* Data table */}
-                <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "auto" }}>
-                  <div style={{ minWidth: 500, display: "grid", gridTemplateColumns: "1fr 80px 80px 70px 90px 90px 80px", borderBottom: "1px solid #1a1a1a", background: "#0d0d0d" }}>
+                <div style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "auto" }}>
+                  <div style={{ minWidth: 500, display: "grid", gridTemplateColumns: "1fr 80px 80px 70px 90px 90px 80px", borderBottom: "1px solid #1a1a1a", background: "#27272a" }}>
                     {["Date", "Athlète", "Temps", "Allure", "Général", "Genre", "Évol."].map(h => (
-                      <div key={h} style={{ padding: "10px 14px", color: "#444", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</div>
+                      <div key={h} style={{ padding: "10px 14px", color: "#71717a", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</div>
                     ))}
                   </div>
                   {runs.map((r, i) => {
@@ -578,7 +578,7 @@ function RunningRecords({ data }) {
                     const acol = ATHLETE_COLORS[r.athlete];
                     const isPR = r.secs === Math.min(...runs.filter(x => x.athlete === r.athlete).map(x => x.secs));
                     return (
-                      <div key={r.id} style={{ display: "grid", gridTemplateColumns: "1fr 80px 80px 70px 90px 90px 80px", minWidth: 500, borderBottom: i < runs.length - 1 ? "1px solid #111" : "none", background: i % 2 === 0 ? "#0a0a0a" : "#0d0d0d" }}>
+                      <div key={r.id} style={{ display: "grid", gridTemplateColumns: "1fr 80px 80px 70px 90px 90px 80px", minWidth: 500, borderBottom: i < runs.length - 1 ? "1px solid #111" : "none", background: i % 2 === 0 ? "#1f1f23" : "#27272a" }}>
                         <div style={{ padding: "12px 14px", color: "#777", fontSize: 13 }}>
                           {r.date}
                           {isPR && <span style={{ marginLeft: 8, color: col.main, fontSize: 10, fontWeight: 800 }}>★ PR</span>}
@@ -588,26 +588,26 @@ function RunningRecords({ data }) {
                           <span style={{ color: acol, fontSize: 12, fontWeight: 700 }}>{r.athlete}</span>
                         </div>
                         <div style={{ padding: "12px 14px", color: "#fff", fontWeight: 800, fontSize: 13 }}>{formatTime(r.secs)}</div>
-                        <div style={{ padding: "12px 14px", color: "#555", fontSize: 12 }}>{r.pace ? `${r.pace}/km` : "—"}</div>
+                        <div style={{ padding: "12px 14px", color: "#888", fontSize: 12 }}>{r.pace ? `${r.pace}/km` : "—"}</div>
                         <div style={{ padding: "12px 14px" }}>
                           {r.rankOverall ? (
                             <div>
                               <span style={{ color: "#fff", fontWeight: 700, fontSize: 12 }}>{r.rankOverall}</span>
-                              {r.totalOverall && <span style={{ color: "#444", fontSize: 11 }}>/{r.totalOverall}</span>}
+                              {r.totalOverall && <span style={{ color: "#71717a", fontSize: 11 }}>/{r.totalOverall}</span>}
                               {calcPct(r.rankOverall, r.totalOverall) && <div style={{ color: col.main, fontSize: 10, fontWeight: 700 }}>top {calcPct(r.rankOverall, r.totalOverall)}%</div>}
                             </div>
-                          ) : <span style={{ color: "#333" }}>—</span>}
+                          ) : <span style={{ color: "#52525b" }}>—</span>}
                         </div>
                         <div style={{ padding: "12px 14px" }}>
                           {r.rankGender ? (
                             <div>
                               <span style={{ color: "#fff", fontWeight: 700, fontSize: 12 }}>{r.rankGender}</span>
-                              {r.totalGender && <span style={{ color: "#444", fontSize: 11 }}>/{r.totalGender}</span>}
+                              {r.totalGender && <span style={{ color: "#71717a", fontSize: 11 }}>/{r.totalGender}</span>}
                               {calcPct(r.rankGender, r.totalGender) && <div style={{ color: col.main, fontSize: 10, fontWeight: 700 }}>top {calcPct(r.rankGender, r.totalGender)}%</div>}
                             </div>
-                          ) : <span style={{ color: "#333" }}>—</span>}
+                          ) : <span style={{ color: "#52525b" }}>—</span>}
                         </div>
-                        <div style={{ padding: "12px 14px", fontSize: 12, fontWeight: 700, color: diff === null ? "#333" : improved ? "#4ade80" : "#f87171" }}>
+                        <div style={{ padding: "12px 14px", fontSize: 12, fontWeight: 700, color: diff === null ? "#52525b" : improved ? "#4ade80" : "#f87171" }}>
                           {diff === null ? "—" : `${improved ? "▼" : "▲"} ${formatTime(Math.abs(diff))}`}
                         </div>
                       </div>
@@ -619,7 +619,7 @@ function RunningRecords({ data }) {
           })()}
 
           {!selectedRace && raceOptions.length === 0 && (
-            <div style={{ color: "#333", textAlign: "center", padding: 40, fontSize: 14 }}>
+            <div style={{ color: "#52525b", textAlign: "center", padding: 40, fontSize: 14 }}>
               Enregistrez au moins une activité pour voir la progression.
             </div>
           )}
@@ -685,14 +685,14 @@ function RunningTab({ data, setData, raceNames, setRaceNames }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {/* Sub-tabs */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", gap: 4, background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 10, padding: 4 }}>
+        <div style={{ display: "flex", gap: 4, background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 10, padding: 4 }}>
           {["Historique", "Records"].map(t => (
             <button key={t} onClick={() => setSubTab(t)} style={{
               padding: "7px 18px",
               borderRadius: 7,
               border: "none",
               background: subTab === t ? col.main : "transparent",
-              color: subTab === t ? "#000" : "#555",
+              color: subTab === t ? "#000" : "#888",
               fontWeight: 700,
               fontSize: 13,
               cursor: "pointer",
@@ -704,7 +704,7 @@ function RunningTab({ data, setData, raceNames, setRaceNames }) {
         <button onClick={() => setSubTab("+")} style={{
           width: 36, height: 36,
           borderRadius: 10,
-          border: `1.5px solid ${subTab === "+" ? "#e53e3e" : "#333"}`,
+          border: `1.5px solid ${subTab === "+" ? "#e53e3e" : "#52525b"}`,
           background: subTab === "+" ? "#e53e3e" : "transparent",
           color: subTab === "+" ? "#fff" : "#888",
           fontWeight: 900,
@@ -727,12 +727,12 @@ function RunningTab({ data, setData, raceNames, setRaceNames }) {
               const b = best(a);
               const runs = data.filter(r => r.athlete === a);
               return (
-                <div key={a} style={{ flex: 1, minWidth: 200, background: "#0f0f0f", border: `1px solid ${col.border}`, borderRadius: 14, padding: "16px 20px" }}>
+                <div key={a} style={{ flex: 1, minWidth: 200, background: "#1f1f23", border: `1px solid ${col.border}`, borderRadius: 14, padding: "16px 20px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                     <span style={{ color: "#fff", fontWeight: 800, fontSize: 16 }}>{a}</span>
                     <span style={{ color: col.main, fontSize: 22 }}>🏃</span>
                   </div>
-                  <div style={{ color: "#555", fontSize: 12 }}>{runs.length} sortie{runs.length > 1 ? "s" : ""}</div>
+                  <div style={{ color: "#888", fontSize: 12 }}>{runs.length} sortie{runs.length > 1 ? "s" : ""}</div>
                   {b && <div style={{ color: col.main, fontSize: 13, marginTop: 6, fontWeight: 700 }}>PR: {b.distance} en {formatTime(b.secs)}</div>}
                 </div>
               );
@@ -740,10 +740,10 @@ function RunningTab({ data, setData, raceNames, setRaceNames }) {
           </div>
 
           {/* Form */}
-          <div style={{ background: "#0a0a0a", border: `1px solid #1a1a1a`, borderRadius: 16, padding: "20px 24px" }}>
+          <div style={{ background: "#1f1f23", border: `1px solid #1a1a1a`, borderRadius: 16, padding: "20px 24px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <div style={{ color: "#fff", fontWeight: 800, fontSize: 15 }}>{editingId ? "✎ Modifier la sortie" : "+ Ajouter une sortie"}</div>
-              {editingId && <button onClick={() => { setEditingId(null); setForm(defaultRunForm); setSubTab("Historique"); }} style={{ background: "transparent", border: "1px solid #333", borderRadius: 8, color: "#555", fontSize: 12, padding: "5px 12px", cursor: "pointer", fontFamily: "inherit" }}>Annuler</button>}
+              {editingId && <button onClick={() => { setEditingId(null); setForm(defaultRunForm); setSubTab("Historique"); }} style={{ background: "transparent", border: "1px solid #333", borderRadius: 8, color: "#888", fontSize: 12, padding: "5px 12px", cursor: "pointer", fontFamily: "inherit" }}>Annuler</button>}
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }} className="form-grid">
               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -759,8 +759,8 @@ function RunningTab({ data, setData, raceNames, setRaceNames }) {
                     value={form.raceName}
                     onChange={e => update("raceName", e.target.value)}
                     style={{
-                      flex: 1, background: "#0d0d0d", border: "1px solid #222", borderRadius: 8,
-                      padding: "9px 12px", color: form.raceName ? "#fff" : "#555", fontSize: 14,
+                      flex: 1, background: "#27272a", border: "1px solid #222", borderRadius: 8,
+                      padding: "9px 12px", color: form.raceName ? "#fff" : "#888", fontSize: 14,
                       outline: "none", boxSizing: "border-box", fontFamily: "inherit", cursor: "pointer",
                     }}
                   >
@@ -771,9 +771,9 @@ function RunningTab({ data, setData, raceNames, setRaceNames }) {
                     onClick={() => setShowAddRace(v => !v)}
                     title="Ajouter une course"
                     style={{
-                      width: 36, height: 36, borderRadius: 8, border: `1.5px solid ${showAddRace ? col.main : "#222"}`,
+                      width: 36, height: 36, borderRadius: 8, border: `1.5px solid ${showAddRace ? col.main : "#3f3f46"}`,
                       background: showAddRace ? col.main + "22" : "transparent",
-                      color: showAddRace ? col.main : "#555", fontWeight: 900, fontSize: 18,
+                      color: showAddRace ? col.main : "#888", fontWeight: 900, fontSize: 18,
                       cursor: "pointer", fontFamily: "inherit", flexShrink: 0,
                       display: "flex", alignItems: "center", justifyContent: "center",
                     }}>+</button>
@@ -786,7 +786,7 @@ function RunningTab({ data, setData, raceNames, setRaceNames }) {
                       onKeyDown={e => e.key === "Enter" && addRaceName()}
                       placeholder="Nom de la nouvelle course..."
                       style={{
-                        flex: 1, background: "#0d0d0d", border: `1px solid ${col.main}44`, borderRadius: 8,
+                        flex: 1, background: "#27272a", border: `1px solid ${col.main}44`, borderRadius: 8,
                         padding: "8px 12px", color: "#fff", fontSize: 13, outline: "none",
                         fontFamily: "inherit",
                       }}
@@ -803,9 +803,9 @@ function RunningTab({ data, setData, raceNames, setRaceNames }) {
               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 <label style={{ color: "#666", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>Allure /km</label>
                 <div style={{
-                  background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: 8,
+                  background: "#27272a", border: "1px solid #1a1a1a", borderRadius: 8,
                   padding: "9px 12px", fontSize: 14, minHeight: 38,
-                  color: calcPace(form.distance, form.time) ? SPORT_COLORS["Course à pied"].main : "#333",
+                  color: calcPace(form.distance, form.time) ? SPORT_COLORS["Course à pied"].main : "#52525b",
                   fontWeight: calcPace(form.distance, form.time) ? 700 : 400,
                 }}>
                   {calcPace(form.distance, form.time) ? `${calcPace(form.distance, form.time)} /km` : "calculé auto."}
@@ -814,16 +814,16 @@ function RunningTab({ data, setData, raceNames, setRaceNames }) {
             </div>
 
             {/* Ranking section */}
-            <div style={{ marginTop: 16, padding: "16px 18px", background: "#060606", border: "1px solid #161616", borderRadius: 10 }}>
-              <div style={{ color: "#555", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 14 }}>Classement (optionnel)</div>
+            <div style={{ marginTop: 16, padding: "16px 18px", background: "#18181b", border: "1px solid #161616", borderRadius: 10 }}>
+              <div style={{ color: "#888", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 14 }}>Classement (optionnel)</div>
               <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
                 {[
                   { label: "Rang général", rankKey: "rankOverall", totalKey: "totalOverall" },
                   { label: "Rang par genre", rankKey: "rankGender", totalKey: "totalGender" },
                 ].map(({ label, rankKey, totalKey }) => (
                   <div key={rankKey} style={{ flex: "1 1 200px", minWidth: 0 }}>
-                    <label style={{ color: "#555", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", display: "block", marginBottom: 6 }}>{label}</label>
-                    <div style={{ display: "flex", alignItems: "center", gap: 0, background: "#0d0d0d", border: "1px solid #222", borderRadius: 8, overflow: "hidden" }}>
+                    <label style={{ color: "#888", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", display: "block", marginBottom: 6 }}>{label}</label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 0, background: "#27272a", border: "1px solid #222", borderRadius: 8, overflow: "hidden" }}>
                       <input
                         value={form[rankKey]}
                         onChange={e => update(rankKey, e.target.value)}
@@ -831,7 +831,7 @@ function RunningTab({ data, setData, raceNames, setRaceNames }) {
                         type="number" min="1"
                         style={{ flex: 1, minWidth: 0, background: "transparent", border: "none", padding: "9px 10px", color: "#fff", fontSize: 13, outline: "none", fontFamily: "inherit" }}
                       />
-                      <span style={{ color: "#333", fontSize: 14, padding: "0 4px", flexShrink: 0 }}>/</span>
+                      <span style={{ color: "#52525b", fontSize: 14, padding: "0 4px", flexShrink: 0 }}>/</span>
                       <input
                         value={form[totalKey]}
                         onChange={e => update(totalKey, e.target.value)}
@@ -878,7 +878,7 @@ function RunningTab({ data, setData, raceNames, setRaceNames }) {
                 borderRadius: "999px",
                 border: filter === f ? `1.5px solid ${col.main}` : "1.5px solid #222",
                 background: filter === f ? col.light : "transparent",
-                color: filter === f ? col.main : "#555",
+                color: filter === f ? col.main : "#888",
                 fontWeight: 700,
                 fontSize: 12,
                 cursor: "pointer",
@@ -886,11 +886,11 @@ function RunningTab({ data, setData, raceNames, setRaceNames }) {
             ))}
           </div>
           {sorted.length === 0 ? (
-            <div style={{ color: "#333", textAlign: "center", padding: 40, fontSize: 14 }}>Aucune sortie enregistrée</div>
+            <div style={{ color: "#52525b", textAlign: "center", padding: 40, fontSize: 14 }}>Aucune sortie enregistrée</div>
           ) : sorted.map(r => (
             <div key={r.id} style={{
               padding: "14px 18px",
-              background: "#0a0a0a",
+              background: "#1f1f23",
               border: "1px solid #1a1a1a",
               borderRadius: 12,
               marginBottom: 8,
@@ -902,24 +902,24 @@ function RunningTab({ data, setData, raceNames, setRaceNames }) {
                     <span style={{ color: "#fff", fontWeight: 700 }}>{r.distance}</span>
                     {r.raceName && <span style={{ color: "#666", fontSize: 12 }}>· {r.raceName}</span>}
                   </div>
-                  <div style={{ color: "#555", fontSize: 12 }}>{r.date}{r.notes && ` · ${r.notes}`}</div>
+                  <div style={{ color: "#888", fontSize: 12 }}>{r.date}{r.notes && ` · ${r.notes}`}</div>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
                   <ActionButtons accentColor={col.main} onEdit={() => startEdit(r)} onDelete={() => deleteRun(r.id)} />
                   <div style={{ textAlign: "right" }}>
                     <div style={{ color: col.main, fontWeight: 800, fontSize: 18 }}>{formatTime(r.secs)}</div>
-                    {r.pace && <div style={{ color: "#555", fontSize: 12 }}>{r.pace}/km</div>}
+                    {r.pace && <div style={{ color: "#888", fontSize: 12 }}>{r.pace}/km</div>}
                   </div>
                 </div>
               </div>
               {(r.rankOverall || r.rankGender) && (
                 <div style={{ display: "flex", gap: 10, marginTop: 10, paddingTop: 10, borderTop: "1px solid #141414" }}>
                   {r.rankOverall && (
-                    <div style={{ flex: 1, background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: 8, padding: "8px 12px" }}>
-                      <div style={{ color: "#444", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Général</div>
+                    <div style={{ flex: 1, background: "#27272a", border: "1px solid #1a1a1a", borderRadius: 8, padding: "8px 12px" }}>
+                      <div style={{ color: "#71717a", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Général</div>
                       <div style={{ display: "flex", alignItems: "baseline", gap: 3, flexWrap: "nowrap" }}>
                         <span style={{ color: "#fff", fontWeight: 800, fontSize: 16 }}>{r.rankOverall}</span>
-                        {r.totalOverall && <span style={{ color: "#444", fontSize: 12, whiteSpace: "nowrap" }}>/ {r.totalOverall}</span>}
+                        {r.totalOverall && <span style={{ color: "#71717a", fontSize: 12, whiteSpace: "nowrap" }}>/ {r.totalOverall}</span>}
                       </div>
                       {calcPct(r.rankOverall, r.totalOverall) && (
                         <div style={{ color: col.main, fontSize: 11, fontWeight: 700, marginTop: 2 }}>top {calcPct(r.rankOverall, r.totalOverall)}%</div>
@@ -927,11 +927,11 @@ function RunningTab({ data, setData, raceNames, setRaceNames }) {
                     </div>
                   )}
                   {r.rankGender && (
-                    <div style={{ flex: 1, background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: 8, padding: "8px 12px" }}>
-                      <div style={{ color: "#444", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Par genre</div>
+                    <div style={{ flex: 1, background: "#27272a", border: "1px solid #1a1a1a", borderRadius: 8, padding: "8px 12px" }}>
+                      <div style={{ color: "#71717a", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Par genre</div>
                       <div style={{ display: "flex", alignItems: "baseline", gap: 3, flexWrap: "nowrap" }}>
                         <span style={{ color: "#fff", fontWeight: 800, fontSize: 16 }}>{r.rankGender}</span>
-                        {r.totalGender && <span style={{ color: "#444", fontSize: 12, whiteSpace: "nowrap" }}>/ {r.totalGender}</span>}
+                        {r.totalGender && <span style={{ color: "#71717a", fontSize: 12, whiteSpace: "nowrap" }}>/ {r.totalGender}</span>}
                       </div>
                       {calcPct(r.rankGender, r.totalGender) && (
                         <div style={{ color: col.main, fontSize: 11, fontWeight: 700, marginTop: 2 }}>top {calcPct(r.rankGender, r.totalGender)}%</div>
@@ -962,9 +962,9 @@ function HyroxComparison({ data }) {
 
   const SelectRow = ({ label, value, onChange }) => (
     <div style={{ flex: 1, minWidth: 200, display: "flex", flexDirection: "column", gap: 6 }}>
-      <label style={{ color: "#555", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>{label}</label>
+      <label style={{ color: "#888", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>{label}</label>
       <select value={value} onChange={e => onChange(e.target.value)}
-        style={{ background: "#0d0d0d", border: `1px solid ${col.border}`, borderRadius: 8, padding: "9px 12px", color: value ? "#fff" : "#555", fontSize: 13, outline: "none", fontFamily: "inherit", cursor: "pointer" }}>
+        style={{ background: "#27272a", border: `1px solid ${col.border}`, borderRadius: 8, padding: "9px 12px", color: value ? "#fff" : "#888", fontSize: 13, outline: "none", fontFamily: "inherit", cursor: "pointer" }}>
         <option value="">Choisir une course…</option>
         {races.map(r => <option key={r.id} value={r.id}>{raceLabel(r)}</option>)}
       </select>
@@ -990,7 +990,7 @@ function HyroxComparison({ data }) {
   const CompRow = ({ label, sA, sB, highlight }) => {
     const best = sA && sB ? (sA <= sB ? "A" : "B") : null;
     return (
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderBottom: "1px solid #111", background: highlight ? "#0d0d0d" : "#0a0a0a" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", borderBottom: "1px solid #111", background: highlight ? "#27272a" : "#1f1f23" }}>
         <div style={{ padding: "11px 16px", display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ color: "#777", fontSize: 12 }}>{label}</span>
         </div>
@@ -1000,7 +1000,7 @@ function HyroxComparison({ data }) {
               {formatTime(sA)}
               {best === "A" && sA !== sB && <span style={{ marginLeft: 6, fontSize: 10, color: "#4ade80" }}>★</span>}
             </span>
-          ) : <span style={{ color: "#2a2a2a" }}>—</span>}
+          ) : <span style={{ color: "#3f3f46" }}>—</span>}
         </div>
         <div style={{ padding: "11px 16px", borderLeft: "1px solid #161616" }}>
           {sB ? (
@@ -1008,7 +1008,7 @@ function HyroxComparison({ data }) {
               {formatTime(sB)}
               {best === "B" && sA !== sB && <span style={{ marginLeft: 6, fontSize: 10, color: "#4ade80" }}>★</span>}
             </span>
-          ) : <span style={{ color: "#2a2a2a" }}>—</span>}
+          ) : <span style={{ color: "#3f3f46" }}>—</span>}
         </div>
       </div>
     );
@@ -1023,36 +1023,36 @@ function HyroxComparison({ data }) {
       </div>
 
       {!a && !b && raceA === "" && raceB === "" && (
-        <div style={{ color: "#333", textAlign: "center", padding: 40, fontSize: 14 }}>
+        <div style={{ color: "#52525b", textAlign: "center", padding: 40, fontSize: 14 }}>
           Sélectionnez deux courses pour les comparer.
         </div>
       )}
 
       {(a || b) && (
-        <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "auto" }}>
+        <div style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "auto" }}>
           {/* Header */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", background: "#0d0d0d", borderBottom: "1px solid #1a1a1a" }}>
-            <div style={{ padding: "12px 16px", color: "#444", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>Segment</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", background: "#27272a", borderBottom: "1px solid #1a1a1a" }}>
+            <div style={{ padding: "12px 16px", color: "#71717a", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>Segment</div>
             <div style={{ padding: "12px 16px", borderLeft: "1px solid #1a1a1a" }}>
               {a ? (
                 <div>
                   <div style={{ color: "#fff", fontWeight: 800, fontSize: 13 }}>{a.eventName || a.athlete}</div>
-                  <div style={{ color: "#555", fontSize: 11 }}>{a.date} · {a.athlete}</div>
+                  <div style={{ color: "#888", fontSize: 11 }}>{a.date} · {a.athlete}</div>
                 </div>
-              ) : <span style={{ color: "#333" }}>—</span>}
+              ) : <span style={{ color: "#52525b" }}>—</span>}
             </div>
             <div style={{ padding: "12px 16px", borderLeft: "1px solid #1a1a1a" }}>
               {b ? (
                 <div>
                   <div style={{ color: "#fff", fontWeight: 800, fontSize: 13 }}>{b.eventName || b.athlete}</div>
-                  <div style={{ color: "#555", fontSize: 11 }}>{b.date} · {b.athlete}</div>
+                  <div style={{ color: "#888", fontSize: 11 }}>{b.date} · {b.athlete}</div>
                 </div>
-              ) : <span style={{ color: "#333" }}>—</span>}
+              ) : <span style={{ color: "#52525b" }}>—</span>}
             </div>
           </div>
 
           {/* Totaux */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", background: "#111", borderBottom: "2px solid #222" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", background: "#2a2a2e", borderBottom: "2px solid #222" }}>
             <div style={{ padding: "14px 16px", color: "#888", fontSize: 11, fontWeight: 700, textTransform: "uppercase" }}>Temps total</div>
             <div style={{ padding: "14px 16px", borderLeft: "1px solid #222" }}>
               <span style={{ ...diffStyle(a?.totalSecs, b?.totalSecs), fontSize: 20 }}>{a ? formatTime(a.totalSecs) : "—"}</span>
@@ -1065,7 +1065,7 @@ function HyroxComparison({ data }) {
           <CompRow label="Roxzone total" sA={a?.roxzoneSecs} sB={b?.roxzoneSecs} />
 
           {/* Séparateur Runs */}
-          <div style={{ padding: "8px 16px", background: "#111", color: "#555", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+          <div style={{ padding: "8px 16px", background: "#2a2a2e", color: "#888", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>
             Splits de run
           </div>
           {HYROX_RUNS.map((run, i) => (
@@ -1076,7 +1076,7 @@ function HyroxComparison({ data }) {
           ))}
 
           {/* Séparateur Stations */}
-          <div style={{ padding: "8px 16px", background: "#111", color: "#555", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+          <div style={{ padding: "8px 16px", background: "#2a2a2e", color: "#888", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>
             Stations
           </div>
           {HYROX_STATIONS.map((station, i) => (
@@ -1122,30 +1122,30 @@ function HyroxRecords({ data, trainingData, templates }) {
         {ATHLETES.map(a => {
           const pr = getPR(a);
           return (
-            <div key={a} style={{ flex: 1, minWidth: 220, background: "#0a0a0a", border: `1px solid ${col.border}`, borderRadius: 16, padding: "20px 24px" }}>
+            <div key={a} style={{ flex: 1, minWidth: 220, background: "#1f1f23", border: `1px solid ${col.border}`, borderRadius: 16, padding: "20px 24px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
                 <span style={{ color: "#fff", fontWeight: 900, fontSize: 18 }}>{a}</span>
                 <span style={{ fontSize: 24 }}>⚡</span>
               </div>
               {pr ? (
                 <>
-                  <div style={{ color: "#555", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", fontWeight: 700, marginBottom: 4 }}>Meilleur temps</div>
+                  <div style={{ color: "#888", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", fontWeight: 700, marginBottom: 4 }}>Meilleur temps</div>
                   <div style={{ color: col.main, fontWeight: 900, fontSize: 32 }}>{formatTime(pr.totalSecs)}</div>
                   <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4, flexWrap: "wrap" }}>
                     {pr.eventName && <span style={{ color: "#fff", fontWeight: 700, fontSize: 13 }}>{pr.eventName}</span>}
-                    <span style={{ color: "#444", fontSize: 12 }}>{pr.date}</span>
-                    {pr.category && pr.category !== "Solo" && <Badge color="#555">{pr.category}</Badge>}
+                    <span style={{ color: "#71717a", fontSize: 12 }}>{pr.date}</span>
+                    {pr.category && pr.category !== "Solo" && <Badge color="#888">{pr.category}</Badge>}
                   </div>
                   <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 4 }}>
-                    {pr.runSecs && <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "#555", fontSize: 12 }}>Run</span><span style={{ color: "#aaa", fontSize: 12, fontWeight: 700 }}>{formatTime(pr.runSecs)}</span></div>}
-                    {pr.roxzoneSecs && <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "#555", fontSize: 12 }}>Roxzone</span><span style={{ color: col.main, fontSize: 12, fontWeight: 700 }}>{formatTime(pr.roxzoneSecs)}</span></div>}
+                    {pr.runSecs && <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "#888", fontSize: 12 }}>Run</span><span style={{ color: "#aaa", fontSize: 12, fontWeight: 700 }}>{formatTime(pr.runSecs)}</span></div>}
+                    {pr.roxzoneSecs && <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "#888", fontSize: 12 }}>Roxzone</span><span style={{ color: col.main, fontSize: 12, fontWeight: 700 }}>{formatTime(pr.roxzoneSecs)}</span></div>}
                   </div>
                   {pr.stationSecs && Object.values(pr.stationSecs).some(Boolean) && (
                     <div style={{ marginTop: 12 }}>
-                      <div style={{ color: "#444", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>Stations</div>
+                      <div style={{ color: "#71717a", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>Stations</div>
                       {HYROX_STATIONS.map(s => pr.stationSecs[s] ? (
                         <div key={s} style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                          <span style={{ color: "#555", fontSize: 12 }}>{s}</span>
+                          <span style={{ color: "#888", fontSize: 12 }}>{s}</span>
                           <span style={{ color: col.main, fontWeight: 700, fontSize: 12 }}>{formatTime(pr.stationSecs[s])}</span>
                         </div>
                       ) : null)}
@@ -1153,7 +1153,7 @@ function HyroxRecords({ data, trainingData, templates }) {
                   )}
                 </>
               ) : (
-                <div style={{ color: "#333", fontSize: 14 }}>Aucune course enregistrée</div>
+                <div style={{ color: "#52525b", fontSize: 14 }}>Aucune course enregistrée</div>
               )}
             </div>
           );
@@ -1223,9 +1223,9 @@ function HyroxRecords({ data, trainingData, templates }) {
               <div style={{ color: "#fff", fontWeight: 800, fontSize: 14 }}>Top 10 par station</div>
               <button onClick={() => setIncludeTraining(v => !v)} style={{
                 padding: "5px 14px", borderRadius: 999, cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 11,
-                border: `1.5px solid ${includeTraining ? col.main : "#333"}`,
+                border: `1.5px solid ${includeTraining ? col.main : "#52525b"}`,
                 background: includeTraining ? col.main + "22" : "transparent",
-                color: includeTraining ? col.main : "#555",
+                color: includeTraining ? col.main : "#888",
               }}>
                 {includeTraining ? "✓ " : ""}Inclure entraînements
               </button>
@@ -1234,30 +1234,30 @@ function HyroxRecords({ data, trainingData, templates }) {
               const top10 = getTop10ForStation(station);
               if (!top10.length) return null;
               return (
-                <div key={station} style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "hidden" }}>
-                  <div style={{ padding: "12px 20px", borderBottom: "1px solid #1a1a1a", background: "#0d0d0d" }}>
+                <div key={station} style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "hidden" }}>
+                  <div style={{ padding: "12px 20px", borderBottom: "1px solid #1a1a1a", background: "#27272a" }}>
                     <span style={{ color: col.main, fontWeight: 800, fontSize: 13 }}>{station}</span>
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "36px 80px 1fr 90px 80px", background: "#0d0d0d", borderBottom: "1px solid #1a1a1a" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "36px 80px 1fr 90px 80px", background: "#27272a", borderBottom: "1px solid #1a1a1a" }}>
                     {["#", "Athlète", "Source · Mode", "Temps", "Type"].map(h => (
-                      <div key={h} style={{ padding: "8px 12px", color: "#444", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</div>
+                      <div key={h} style={{ padding: "8px 12px", color: "#71717a", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</div>
                     ))}
                   </div>
                   {top10.map((entry, i) => {
-                    const rankColor = i === 0 ? "#FFD700" : i === 1 ? "#C0C0C0" : i === 2 ? "#CD7F32" : "#444";
+                    const rankColor = i === 0 ? "#FFD700" : i === 1 ? "#C0C0C0" : i === 2 ? "#CD7F32" : "#71717a";
                     return (
-                      <div key={entry.id} style={{ display: "grid", gridTemplateColumns: "36px 80px 1fr 90px 80px", borderBottom: i < top10.length - 1 ? "1px solid #111" : "none", background: i % 2 === 0 ? "#0a0a0a" : "#0d0d0d" }}>
+                      <div key={entry.id} style={{ display: "grid", gridTemplateColumns: "36px 80px 1fr 90px 80px", borderBottom: i < top10.length - 1 ? "1px solid #111" : "none", background: i % 2 === 0 ? "#1f1f23" : "#27272a" }}>
                         <div style={{ padding: "10px 12px", color: rankColor, fontWeight: 800, fontSize: 13 }}>{i + 1}</div>
                         <div style={{ padding: "10px 12px" }}><Badge color={col.main}>{entry.athlete}</Badge></div>
                         <div style={{ padding: "10px 12px" }}>
                           <div style={{ color: "#888", fontSize: 12 }}>{entry.label}</div>
-                          <div style={{ color: "#555", fontSize: 11 }}>{entry.mode} · {entry.date}</div>
+                          <div style={{ color: "#888", fontSize: 11 }}>{entry.mode} · {entry.date}</div>
                         </div>
                         <div style={{ padding: "10px 12px", color: i === 0 ? col.main : "#fff", fontWeight: i === 0 ? 800 : 600, fontSize: 14 }}>
                           {formatTime(entry.secs)}{i === 0 && <span style={{ marginLeft: 4, fontSize: 9, color: col.main }}>★</span>}
                         </div>
                         <div style={{ padding: "10px 12px" }}>
-                          <span style={{ color: entry.isTraining ? "#555" : col.main + "99", fontSize: 10, fontWeight: 700 }}>
+                          <span style={{ color: entry.isTraining ? "#888" : col.main + "99", fontSize: 10, fontWeight: 700 }}>
                             {entry.isTraining ? "Entraîn." : "Course"}
                           </span>
                         </div>
@@ -1273,7 +1273,7 @@ function HyroxRecords({ data, trainingData, templates }) {
 
       {/* Progression chronologique */}
       {allRaces.length > 0 && (
-        <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 14, padding: "20px 24px" }}>
+        <div style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 14, padding: "20px 24px" }}>
           <div style={{ color: "#fff", fontWeight: 800, fontSize: 14, marginBottom: 16 }}>Toutes les performances</div>
           {ATHLETES.map(a => {
             const races = allRaces.filter(r => r.athlete === a);
@@ -1284,8 +1284,8 @@ function HyroxRecords({ data, trainingData, templates }) {
                 <div style={{ color: "#888", fontSize: 12, fontWeight: 700, textTransform: "uppercase", marginBottom: 8 }}>{a}</div>
                 {races.map(r => (
                   <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
-                    <div style={{ color: "#555", fontSize: 12, width: 80 }}>{r.date}</div>
-                    <div style={{ flex: 1, background: "#111", borderRadius: 4, height: 8, overflow: "hidden" }}>
+                    <div style={{ color: "#888", fontSize: 12, width: 80 }}>{r.date}</div>
+                    <div style={{ flex: 1, background: "#2a2a2e", borderRadius: 4, height: 8, overflow: "hidden" }}>
                       {r.totalSecs && <div style={{ width: `${(best.totalSecs / r.totalSecs) * 100}%`, height: "100%", background: r.id === best.id ? col.main : col.main + "66", borderRadius: 4 }} />}
                     </div>
                     <div style={{ color: r.id === best.id ? col.main : "#777", fontWeight: r.id === best.id ? 800 : 600, fontSize: 13, width: 80, textAlign: "right" }}>
@@ -1375,14 +1375,14 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {/* Sub-tabs */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", gap: 4, background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 10, padding: 4 }}>
+        <div style={{ display: "flex", gap: 4, background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 10, padding: 4 }}>
           {["Historique", "Records", "Comparaison", "Entraînements"].map(t => (
             <button key={t} onClick={() => setSubTab(t)} style={{
               padding: "7px 18px",
               borderRadius: 7,
               border: "none",
               background: subTab === t ? col.main : "transparent",
-              color: subTab === t ? "#000" : "#555",
+              color: subTab === t ? "#000" : "#888",
               fontWeight: 700,
               fontSize: 13,
               cursor: "pointer",
@@ -1394,7 +1394,7 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
         <button onClick={() => setSubTab("+")} style={{
           width: 36, height: 36,
           borderRadius: 10,
-          border: `1.5px solid ${subTab === "+" ? "#e53e3e" : "#333"}`,
+          border: `1.5px solid ${subTab === "+" ? "#e53e3e" : "#52525b"}`,
           background: subTab === "+" ? "#e53e3e" : "transparent",
           color: subTab === "+" ? "#fff" : "#888",
           fontWeight: 900,
@@ -1412,10 +1412,10 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
       {subTab === "Entraînements" && <HyroxTrainingTab data={trainingData || []} setData={setTrainingData} templates={templates || []} setTemplates={setTemplates} partners={partners || []} setPartners={setPartners} />}
 
       {subTab === "+" && (
-        <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 16, padding: "20px 24px" }}>
+        <div style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 16, padding: "20px 24px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <div style={{ color: "#fff", fontWeight: 800, fontSize: 15 }}>{editingId ? "✎ Modifier la course" : "+ Ajouter une course Hyrox"}</div>
-            {editingId && <button onClick={() => { setEditingId(null); setForm(defaultHyroxForm); setSubTab("Historique"); }} style={{ background: "transparent", border: "1px solid #333", borderRadius: 8, color: "#555", fontSize: 12, padding: "5px 12px", cursor: "pointer", fontFamily: "inherit" }}>Annuler</button>}
+            {editingId && <button onClick={() => { setEditingId(null); setForm(defaultHyroxForm); setSubTab("Historique"); }} style={{ background: "transparent", border: "1px solid #333", borderRadius: 8, color: "#888", fontSize: 12, padding: "5px 12px", cursor: "pointer", fontFamily: "inherit" }}>Annuler</button>}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 16 }} className="form-grid">
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -1429,9 +1429,9 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {HYROX_CATEGORIES.map(c => (
                   <button key={c} onClick={() => update("category", c)} style={{
-                    padding: "6px 12px", borderRadius: 8, border: `1.5px solid ${form.category === c ? col.main : "#222"}`,
+                    padding: "6px 12px", borderRadius: 8, border: `1.5px solid ${form.category === c ? col.main : "#3f3f46"}`,
                     background: form.category === c ? col.main + "22" : "transparent",
-                    color: form.category === c ? col.main : "#555",
+                    color: form.category === c ? col.main : "#888",
                     fontWeight: 700, fontSize: 11, cursor: "pointer", fontFamily: "inherit",
                     whiteSpace: "nowrap",
                   }}>{c}</button>
@@ -1442,12 +1442,12 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <label style={{ color: "#666", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>Temps de run total</label>
               {autoRunTotal ? (
-                <div style={{ background: "#0d0d0d", border: `1px solid ${col.main}44`, borderRadius: 8, padding: "9px 12px", fontSize: 14, color: col.main, fontWeight: 700 }}>
-                  {secsToStr(autoRunTotal)} <span style={{ color: "#555", fontSize: 11, fontWeight: 400 }}>calculé depuis les splits</span>
+                <div style={{ background: "#27272a", border: `1px solid ${col.main}44`, borderRadius: 8, padding: "9px 12px", fontSize: 14, color: col.main, fontWeight: 700 }}>
+                  {secsToStr(autoRunTotal)} <span style={{ color: "#888", fontSize: 11, fontWeight: 400 }}>calculé depuis les splits</span>
                 </div>
               ) : (
                 <input value={form.runTime} onChange={e => update("runTime", e.target.value)} placeholder="00:35:00"
-                  style={{ background: "#0d0d0d", border: "1px solid #222", borderRadius: 8, padding: "9px 12px", color: "#fff", fontSize: 14, outline: "none", fontFamily: "inherit" }} />
+                  style={{ background: "#27272a", border: "1px solid #222", borderRadius: 8, padding: "9px 12px", color: "#fff", fontSize: 14, outline: "none", fontFamily: "inherit" }} />
               )}
             </div>
             <Input label="Temps Roxzone" value={form.roxzoneTime} onChange={v => update("roxzoneTime", v)} placeholder="00:40:00" />
@@ -1459,8 +1459,8 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
                     value={form.partner}
                     onChange={e => update("partner", e.target.value)}
                     style={{
-                      flex: 1, background: "#0d0d0d", border: "1px solid #222", borderRadius: 8,
-                      padding: "9px 12px", color: form.partner ? "#fff" : "#555", fontSize: 14,
+                      flex: 1, background: "#27272a", border: "1px solid #222", borderRadius: 8,
+                      padding: "9px 12px", color: form.partner ? "#fff" : "#888", fontSize: 14,
                       outline: "none", boxSizing: "border-box", fontFamily: "inherit", cursor: "pointer",
                     }}
                   >
@@ -1470,9 +1470,9 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
                   <button onClick={() => setShowAddPartner(v => !v)} title="Ajouter un partenaire"
                     style={{
                       width: 36, height: 36, borderRadius: 8,
-                      border: `1.5px solid ${showAddPartner ? col.main : "#222"}`,
+                      border: `1.5px solid ${showAddPartner ? col.main : "#3f3f46"}`,
                       background: showAddPartner ? col.main + "22" : "transparent",
-                      color: showAddPartner ? col.main : "#555",
+                      color: showAddPartner ? col.main : "#888",
                       fontWeight: 900, fontSize: 18, cursor: "pointer", fontFamily: "inherit",
                       flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
                     }}>+</button>
@@ -1485,7 +1485,7 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
                       onKeyDown={e => e.key === "Enter" && addPartner()}
                       placeholder="Prénom du partenaire..."
                       style={{
-                        flex: 1, background: "#0d0d0d", border: `1px solid ${col.main}44`, borderRadius: 8,
+                        flex: 1, background: "#27272a", border: `1px solid ${col.main}44`, borderRadius: 8,
                         padding: "8px 12px", color: "#fff", fontSize: 13, outline: "none", fontFamily: "inherit",
                       }}
                     />
@@ -1537,38 +1537,38 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
                 padding: "5px 16px", borderRadius: "999px",
                 border: filter === f ? `1.5px solid ${col.main}` : "1.5px solid #222",
                 background: filter === f ? col.light : "transparent",
-                color: filter === f ? col.main : "#555",
+                color: filter === f ? col.main : "#888",
                 fontWeight: 700, fontSize: 12, cursor: "pointer",
               }}>{f}</button>
             ))}
           </div>
           {sorted.length === 0 ? (
-            <div style={{ color: "#333", textAlign: "center", padding: 40, fontSize: 14 }}>Aucune course Hyrox enregistrée</div>
+            <div style={{ color: "#52525b", textAlign: "center", padding: 40, fontSize: 14 }}>Aucune course Hyrox enregistrée</div>
           ) : sorted.map(r => (
-            <div key={r.id} style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 14, padding: "16px 20px", marginBottom: 10 }}>
+            <div key={r.id} style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 14, padding: "16px 20px", marginBottom: 10 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <div>
                   <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 4 }}>
                     <Badge color={col.main}>{r.athlete}</Badge>
-                    {r.category && r.category !== "Solo" && <Badge color="#555">{r.category}</Badge>}
-                    {r.partner && <span style={{ color: "#555", fontSize: 12 }}>avec {r.partner}</span>}
+                    {r.category && r.category !== "Solo" && <Badge color="#888">{r.category}</Badge>}
+                    {r.partner && <span style={{ color: "#888", fontSize: 12 }}>avec {r.partner}</span>}
                     <span style={{ color: "#fff", fontWeight: 700, fontSize: 13 }}>{r.eventName || ""}</span>
-                    <span style={{ color: "#555", fontSize: 12 }}>{r.date}</span>
+                    <span style={{ color: "#888", fontSize: 12 }}>{r.date}</span>
                   </div>
-                  {r.notes && <div style={{ color: "#555", fontSize: 12 }}>{r.notes}</div>}
+                  {r.notes && <div style={{ color: "#888", fontSize: 12 }}>{r.notes}</div>}
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
                   <ActionButtons accentColor={col.main} onEdit={() => startEdit(r)} onDelete={() => deleteEntry(r.id)} />
                   <div style={{ textAlign: "right" }}>
                     <div style={{ color: col.main, fontWeight: 800, fontSize: 20 }}>{formatTime(r.totalSecs)}</div>
-                    {r.runSecs && <div style={{ color: "#555", fontSize: 12 }}>Run: {formatTime(r.runSecs)}</div>}
-                    {r.roxzoneSecs && <div style={{ color: "#555", fontSize: 12 }}>Roxzone: {formatTime(r.roxzoneSecs)}</div>}
+                    {r.runSecs && <div style={{ color: "#888", fontSize: 12 }}>Run: {formatTime(r.runSecs)}</div>}
+                    {r.roxzoneSecs && <div style={{ color: "#888", fontSize: 12 }}>Roxzone: {formatTime(r.roxzoneSecs)}</div>}
                   </div>
                 </div>
               </div>
               {r.stationSecs && Object.keys(r.stationSecs).length > 0 && (
                 <div style={{ marginTop: 12 }}>
-                  <div style={{ color: "#444", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Stations</div>
+                  <div style={{ color: "#71717a", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Stations</div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                     {HYROX_STATIONS.map(s => r.stationSecs[s] ? (
                       <div key={s} style={{ background: col.light, border: `1px solid ${col.border}`, borderRadius: 8, padding: "4px 10px", fontSize: 12 }}>
@@ -1581,11 +1581,11 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
               )}
               {r.runSecs_splits && Object.values(r.runSecs_splits).some(Boolean) && (
                 <div style={{ marginTop: 10 }}>
-                  <div style={{ color: "#444", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Splits de run</div>
+                  <div style={{ color: "#71717a", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Splits de run</div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                     {HYROX_RUNS.map((run, i) => r.runSecs_splits[run] && (
-                      <div key={run} style={{ background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: 8, padding: "4px 10px", fontSize: 12 }}>
-                        <span style={{ color: "#555" }}>R{i + 1}: </span>
+                      <div key={run} style={{ background: "#27272a", border: "1px solid #1a1a1a", borderRadius: 8, padding: "4px 10px", fontSize: 12 }}>
+                        <span style={{ color: "#888" }}>R{i + 1}: </span>
                         <span style={{ color: "#aaa", fontWeight: 700 }}>{formatTime(r.runSecs_splits[run])}</span>
                       </div>
                     ))}
@@ -1647,17 +1647,17 @@ function KartingTab({ data, setData }) {
   // Group by date+format for display
   const groupedDates = [...new Set(sorted.map(r => r.date))];
 
-  const inputStyle = { background: "#0d0d0d", border: "1px solid #222", borderRadius: 8, padding: "9px 12px", color: "#fff", fontSize: 14, outline: "none", fontFamily: "inherit", width: "100%", boxSizing: "border-box" };
+  const inputStyle = { background: "#27272a", border: "1px solid #222", borderRadius: 8, padding: "9px 12px", color: "#fff", fontSize: 14, outline: "none", fontFamily: "inherit", width: "100%", boxSizing: "border-box" };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", gap: 4, background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 10, padding: 4 }}>
+        <div style={{ display: "flex", gap: 4, background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 10, padding: 4 }}>
           {["Historique", "Circuit"].map(t => (
-            <button key={t} onClick={() => setSubTab(t)} style={{ padding: "7px 18px", borderRadius: 7, border: "none", background: subTab === t ? col.main : "transparent", color: subTab === t ? "#000" : "#555", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}>{t}</button>
+            <button key={t} onClick={() => setSubTab(t)} style={{ padding: "7px 18px", borderRadius: 7, border: "none", background: subTab === t ? col.main : "transparent", color: subTab === t ? "#000" : "#888", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}>{t}</button>
           ))}
         </div>
-        <button onClick={() => { setSubTab("+"); setBulkMode(false); }} style={{ width: 36, height: 36, borderRadius: 10, border: `1.5px solid ${subTab === "+" ? "#e53e3e" : "#333"}`, background: subTab === "+" ? "#e53e3e" : "transparent", color: subTab === "+" ? "#fff" : "#888", fontWeight: 900, fontSize: 20, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+        <button onClick={() => { setSubTab("+"); setBulkMode(false); }} style={{ width: 36, height: 36, borderRadius: 10, border: `1.5px solid ${subTab === "+" ? "#e53e3e" : "#52525b"}`, background: subTab === "+" ? "#e53e3e" : "transparent", color: subTab === "+" ? "#fff" : "#888", fontWeight: 900, fontSize: 20, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
       </div>
 
 
@@ -1670,32 +1670,32 @@ function KartingTab({ data, setData }) {
         const allDates = [...new Set(allRaces.map(r => r.date))];
         return (
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-            <div style={{ background: "#0a0a0a", border: `1px solid ${col.border}`, borderRadius: 14, overflow: "hidden" }}>
+            <div style={{ background: "#1f1f23", border: `1px solid ${col.border}`, borderRadius: 14, overflow: "hidden" }}>
               <div style={{ padding: "14px 20px", borderBottom: "1px solid #1a1a1a", display: "flex", alignItems: "center", gap: 10 }}>
                 <span style={{ fontSize: 18 }}>🏆</span>
                 <span style={{ color: "#fff", fontWeight: 800, fontSize: 14 }}>Top 10 — Meilleurs tours</span>
-                <span style={{ color: "#555", fontSize: 12 }}>RKO Angerville</span>
+                <span style={{ color: "#888", fontSize: 12 }}>RKO Angerville</span>
               </div>
               {allLaps.length === 0 ? (
-                <div style={{ color: "#333", textAlign: "center", padding: 32, fontSize: 13 }}>Aucun temps enregistré</div>
+                <div style={{ color: "#52525b", textAlign: "center", padding: 32, fontSize: 13 }}>Aucun temps enregistré</div>
               ) : (
                 <div>
-                  <div style={{ display: "grid", gridTemplateColumns: "40px 1fr 110px 130px 110px", background: "#0d0d0d", borderBottom: "1px solid #1a1a1a" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "40px 1fr 110px 130px 110px", background: "#27272a", borderBottom: "1px solid #1a1a1a" }}>
                     {["#", "Athlète", "Temps", "Session", "Date"].map(h => (
-                      <div key={h} style={{ padding: "10px 14px", color: "#444", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</div>
+                      <div key={h} style={{ padding: "10px 14px", color: "#71717a", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</div>
                     ))}
                   </div>
                   {top10.map((r, i) => {
-                    const rankColor = i === 0 ? "#FFD700" : i === 1 ? "#C0C0C0" : i === 2 ? "#CD7F32" : "#555";
+                    const rankColor = i === 0 ? "#FFD700" : i === 1 ? "#C0C0C0" : i === 2 ? "#CD7F32" : "#888";
                     return (
-                      <div key={r.id} style={{ display: "grid", gridTemplateColumns: "40px 1fr 110px 130px 110px", borderBottom: i < top10.length - 1 ? "1px solid #111" : "none", background: i % 2 === 0 ? "#0a0a0a" : "#0d0d0d" }}>
+                      <div key={r.id} style={{ display: "grid", gridTemplateColumns: "40px 1fr 110px 130px 110px", borderBottom: i < top10.length - 1 ? "1px solid #111" : "none", background: i % 2 === 0 ? "#1f1f23" : "#27272a" }}>
                         <div style={{ padding: "12px 14px", color: rankColor, fontWeight: 800, fontSize: 14 }}>{i + 1}</div>
                         <div style={{ padding: "12px 14px" }}><Badge color={col.main}>{r.athlete}</Badge></div>
                         <div style={{ padding: "12px 14px", color: i === 0 ? col.main : "#fff", fontWeight: i === 0 ? 800 : 600, fontSize: 14, fontFamily: "monospace" }}>
                           {r.bestLap}{i === 0 && <span style={{ marginLeft: 6, fontSize: 10 }}>★</span>}
                         </div>
                         <div style={{ padding: "12px 14px", color: "#666", fontSize: 12 }}>{r.session}</div>
-                        <div style={{ padding: "12px 14px", color: "#555", fontSize: 12 }}>{r.date}</div>
+                        <div style={{ padding: "12px 14px", color: "#888", fontSize: 12 }}>{r.date}</div>
                       </div>
                     );
                   })}
@@ -1705,16 +1705,16 @@ function KartingTab({ data, setData }) {
             <div>
               <div style={{ color: "#fff", fontWeight: 800, fontSize: 14, marginBottom: 14 }}>Toutes les courses</div>
               {allDates.length === 0 ? (
-                <div style={{ color: "#333", textAlign: "center", padding: 32, fontSize: 13 }}>Aucune course enregistrée</div>
+                <div style={{ color: "#52525b", textAlign: "center", padding: 32, fontSize: 13 }}>Aucune course enregistrée</div>
               ) : allDates.map(date => {
                 const dayRaces = allRaces.filter(r => r.date === date);
                 return (
                   <div key={date} style={{ marginBottom: 16 }}>
-                    <div style={{ color: "#555", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{date}</div>
-                    <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 12, overflow: "auto" }}>
-                      <div style={{ minWidth: 450, display: "grid", gridTemplateColumns: "1fr 70px 130px 120px 100px", background: "#0d0d0d", borderBottom: "1px solid #1a1a1a" }}>
+                    <div style={{ color: "#888", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{date}</div>
+                    <div style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 12, overflow: "auto" }}>
+                      <div style={{ minWidth: 450, display: "grid", gridTemplateColumns: "1fr 70px 130px 120px 100px", background: "#27272a", borderBottom: "1px solid #1a1a1a" }}>
                         {["Session", "Groupe", "Place", "Meilleur tour", "Athlète"].map(h => (
-                          <div key={h} style={{ padding: "9px 14px", color: "#444", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</div>
+                          <div key={h} style={{ padding: "9px 14px", color: "#71717a", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</div>
                         ))}
                       </div>
                       {KARTING_SESSIONS.map(sess => {
@@ -1723,15 +1723,15 @@ function KartingTab({ data, setData }) {
                         return sessRaces.map((r, ri) => {
                           const pct = calcPct(r.rank, r.total);
                           return (
-                            <div key={r.id} style={{ minWidth: 450, display: "grid", gridTemplateColumns: "1fr 70px 130px 120px 100px", borderBottom: "1px solid #111", background: ri % 2 === 0 ? "#0a0a0a" : "#0d0d0d" }}>
+                            <div key={r.id} style={{ minWidth: 450, display: "grid", gridTemplateColumns: "1fr 70px 130px 120px 100px", borderBottom: "1px solid #111", background: ri % 2 === 0 ? "#1f1f23" : "#27272a" }}>
                               <div style={{ padding: "10px 14px", color: "#888", fontWeight: 600, fontSize: 13 }}>{sess}</div>
-                              <div style={{ padding: "10px 14px", color: "#555", fontSize: 12 }}>{r.group ? `G${r.group}` : "—"}</div>
+                              <div style={{ padding: "10px 14px", color: "#888", fontSize: 12 }}>{r.group ? `G${r.group}` : "—"}</div>
                               <div style={{ padding: "10px 14px" }}>
                                 {r.rank ? <div>
                                   <span style={{ color: col.main, fontWeight: 800, fontSize: 15 }}>P{r.rank}</span>
-                                  {r.total && <span style={{ color: "#444", fontSize: 12 }}>/{r.total}</span>}
+                                  {r.total && <span style={{ color: "#71717a", fontSize: 12 }}>/{r.total}</span>}
                                   {pct && <div style={{ color: col.main, fontSize: 10, fontWeight: 700 }}>top {pct}%</div>}
-                                </div> : <span style={{ color: "#333" }}>—</span>}
+                                </div> : <span style={{ color: "#52525b" }}>—</span>}
                               </div>
                               <div style={{ padding: "10px 14px", color: "#888", fontSize: 13, fontFamily: "monospace" }}>{r.bestLap || "—"}</div>
                               <div style={{ padding: "10px 14px" }}><Badge color={col.main}>{r.athlete}</Badge></div>
@@ -1749,16 +1749,16 @@ function KartingTab({ data, setData }) {
       })()}
 
       {subTab === "+" && (
-        <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 16, padding: "20px 24px" }}>
+        <div style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 16, padding: "20px 24px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <div style={{ color: "#fff", fontWeight: 800, fontSize: 15 }}>{editingId ? "✎ Modifier" : "Ajouter un résultat"}</div>
             <div style={{ display: "flex", gap: 8 }}>
               {!editingId && (
-                <button onClick={() => setBulkMode(v => !v)} style={{ padding: "6px 14px", borderRadius: 8, border: `1.5px solid ${bulkMode ? col.main : "#222"}`, background: bulkMode ? col.main + "22" : "transparent", color: bulkMode ? col.main : "#555", fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
+                <button onClick={() => setBulkMode(v => !v)} style={{ padding: "6px 14px", borderRadius: 8, border: `1.5px solid ${bulkMode ? col.main : "#3f3f46"}`, background: bulkMode ? col.main + "22" : "transparent", color: bulkMode ? col.main : "#888", fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
                   Saisie Sprint complète
                 </button>
               )}
-              {editingId && <button onClick={() => { setEditingId(null); setForm(defaultKartForm); setSubTab("Historique"); }} style={{ background: "transparent", border: "1px solid #333", borderRadius: 8, color: "#555", fontSize: 12, padding: "5px 12px", cursor: "pointer", fontFamily: "inherit" }}>Annuler</button>}
+              {editingId && <button onClick={() => { setEditingId(null); setForm(defaultKartForm); setSubTab("Historique"); }} style={{ background: "transparent", border: "1px solid #333", borderRadius: 8, color: "#888", fontSize: 12, padding: "5px 12px", cursor: "pointer", fontFamily: "inherit" }}>Annuler</button>}
             </div>
           </div>
 
@@ -1777,23 +1777,23 @@ function KartingTab({ data, setData }) {
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr", gap: 10 }}>
                 {KARTING_SESSIONS.map((sess, i) => (
-                  <div key={sess} style={{ background: "#060606", border: "1px solid #1a1a1a", borderRadius: 10, padding: "12px" }}>
+                  <div key={sess} style={{ background: "#18181b", border: "1px solid #1a1a1a", borderRadius: 10, padding: "12px" }}>
                     <div style={{ color: col.main, fontWeight: 700, fontSize: 12, marginBottom: 10 }}>{sess}</div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                       <div>
-                        <label style={{ color: "#555", fontSize: 10, fontWeight: 600, textTransform: "uppercase", display: "block", marginBottom: 4 }}>Groupe</label>
+                        <label style={{ color: "#888", fontSize: 10, fontWeight: 600, textTransform: "uppercase", display: "block", marginBottom: 4 }}>Groupe</label>
                         <input type="number" min="1" value={bulkForms[i].group} onChange={e => setBulkForms(f => f.map((x, j) => j === i ? { ...x, group: e.target.value } : x))} placeholder="1" style={{ ...inputStyle, padding: "7px 8px", fontSize: 13 }} />
                       </div>
                       <div>
-                        <label style={{ color: "#555", fontSize: 10, fontWeight: 600, textTransform: "uppercase", display: "block", marginBottom: 4 }}>Place</label>
+                        <label style={{ color: "#888", fontSize: 10, fontWeight: 600, textTransform: "uppercase", display: "block", marginBottom: 4 }}>Place</label>
                         <input type="number" min="1" value={bulkForms[i].rank} onChange={e => setBulkForms(f => f.map((x, j) => j === i ? { ...x, rank: e.target.value } : x))} placeholder="P" style={{ ...inputStyle, padding: "7px 8px", fontSize: 13 }} />
                       </div>
                       <div>
-                        <label style={{ color: "#555", fontSize: 10, fontWeight: 600, textTransform: "uppercase", display: "block", marginBottom: 4 }}>/ Total</label>
+                        <label style={{ color: "#888", fontSize: 10, fontWeight: 600, textTransform: "uppercase", display: "block", marginBottom: 4 }}>/ Total</label>
                         <input type="number" min="1" value={bulkForms[i].total} onChange={e => setBulkForms(f => f.map((x, j) => j === i ? { ...x, total: e.target.value } : x))} placeholder="N" style={{ ...inputStyle, padding: "7px 8px", fontSize: 13 }} />
                       </div>
                       <div>
-                        <label style={{ color: "#555", fontSize: 10, fontWeight: 600, textTransform: "uppercase", display: "block", marginBottom: 4 }}>Meilleur tour</label>
+                        <label style={{ color: "#888", fontSize: 10, fontWeight: 600, textTransform: "uppercase", display: "block", marginBottom: 4 }}>Meilleur tour</label>
                         <input value={bulkForms[i].bestLap} onChange={e => setBulkForms(f => f.map((x, j) => j === i ? { ...x, bestLap: e.target.value } : x))} placeholder="mm:ss.000" style={{ ...inputStyle, padding: "7px 8px", fontSize: 13 }} />
                       </div>
                     </div>
@@ -1836,7 +1836,7 @@ function KartingTab({ data, setData }) {
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   <label style={{ color: "#666", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em" }}>Meilleur tour</label>
                   <input value={form.bestLap} onChange={e => update("bestLap", e.target.value)} placeholder="mm:ss.000" style={inputStyle} />
-                  <span style={{ color: "#444", fontSize: 10 }}>ex: 01:23.456</span>
+                  <span style={{ color: "#71717a", fontSize: 10 }}>ex: 01:23.456</span>
                 </div>
               </div>
               {form.rank && form.total && <div style={{ color: col.main, fontWeight: 700, fontSize: 13 }}>→ Top {calcPct(form.rank, form.total)}%</div>}
@@ -1854,21 +1854,21 @@ function KartingTab({ data, setData }) {
         <div>
           <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
             {["Tous", ...ATHLETES].map(f => (
-              <button key={f} onClick={() => setFilter(f)} style={{ padding: "5px 16px", borderRadius: "999px", border: filter === f ? `1.5px solid ${col.main}` : "1.5px solid #222", background: filter === f ? col.light : "transparent", color: filter === f ? col.main : "#555", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>{f}</button>
+              <button key={f} onClick={() => setFilter(f)} style={{ padding: "5px 16px", borderRadius: "999px", border: filter === f ? `1.5px solid ${col.main}` : "1.5px solid #222", background: filter === f ? col.light : "transparent", color: filter === f ? col.main : "#888", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>{f}</button>
             ))}
           </div>
           {groupedDates.length === 0 ? (
-            <div style={{ color: "#333", textAlign: "center", padding: 40 }}>Aucun résultat enregistré</div>
+            <div style={{ color: "#52525b", textAlign: "center", padding: 40 }}>Aucun résultat enregistré</div>
           ) : groupedDates.map(date => {
             const dayEntries = sorted.filter(r => r.date === date);
             const athletes = [...new Set(dayEntries.map(r => r.athlete))];
             return (
-              <div key={date} style={{ marginBottom: 16, background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "hidden" }}>
+              <div key={date} style={{ marginBottom: 16, background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "hidden" }}>
                 {/* En-tête de journée */}
-                <div style={{ padding: "12px 18px", borderBottom: "1px solid #1a1a1a", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#0d0d0d" }}>
+                <div style={{ padding: "12px 18px", borderBottom: "1px solid #1a1a1a", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#27272a" }}>
                   <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                     <span style={{ color: "#fff", fontWeight: 800, fontSize: 14 }}>{date}</span>
-                    <span style={{ color: "#555", fontSize: 12 }}>{dayEntries[0]?.circuit || "RKO Angerville"}</span>
+                    <span style={{ color: "#888", fontSize: 12 }}>{dayEntries[0]?.circuit || "RKO Angerville"}</span>
                     {athletes.map(a => <Badge key={a} color={col.main}>{a}</Badge>)}
                   </div>
                 </div>
@@ -1884,10 +1884,10 @@ function KartingTab({ data, setData }) {
                           {/* Session */}
                           <div style={{ color: "#666", fontSize: 12, width: 110, flexShrink: 0 }}>{r.session}</div>
                           {/* Groupe */}
-                          <div style={{ color: "#555", fontSize: 12, width: 60, flexShrink: 0 }}>{r.group ? `Gr. ${r.group}` : ""}</div>
+                          <div style={{ color: "#888", fontSize: 12, width: 60, flexShrink: 0 }}>{r.group ? `Gr. ${r.group}` : ""}</div>
                           {/* Place */}
                           <div style={{ width: 100, flexShrink: 0 }}>
-                            {r.rank && <span style={{ color: col.main, fontWeight: 800, fontSize: 18 }}>P{r.rank}<span style={{ color: "#444", fontWeight: 400, fontSize: 12 }}>{r.total ? `/${r.total}` : ""}</span></span>}
+                            {r.rank && <span style={{ color: col.main, fontWeight: 800, fontSize: 18 }}>P{r.rank}<span style={{ color: "#71717a", fontWeight: 400, fontSize: 12 }}>{r.total ? `/${r.total}` : ""}</span></span>}
                             {pct && <div style={{ color: col.main, fontSize: 10, fontWeight: 700 }}>top {pct}%</div>}
                           </div>
                           {/* Meilleur tour */}
@@ -1947,12 +1947,12 @@ function RadarChart({ dataA, dataB, labelA, labelB, color }) {
     <svg viewBox="0 0 300 300" style={{ width: "100%", maxWidth: 320 }}>
       {/* Grid circles */}
       {[0.25, 0.5, 0.75, 1].map(r => (
-        <circle key={r} cx={cx} cy={cy} r={R * r} fill="none" stroke="#1a1a1a" strokeWidth="1" />
+        <circle key={r} cx={cx} cy={cy} r={R * r} fill="none" stroke="#303036" strokeWidth="1" />
       ))}
       {/* Axes */}
       {angles.map((angle, i) => {
         const end = toXY(angle, R);
-        return <line key={i} x1={cx} y1={cy} x2={end.x} y2={end.y} stroke="#222" strokeWidth="1" />;
+        return <line key={i} x1={cx} y1={cy} x2={end.x} y2={end.y} stroke="#3f3f46" strokeWidth="1" />;
       })}
       {/* Labels */}
       {BODY_METRICS.map((m, i) => {
@@ -1969,11 +1969,11 @@ function RadarChart({ dataA, dataB, labelA, labelB, color }) {
       {ptsA && <path d={toPath(ptsA)} fill={color} fillOpacity="0.15" stroke={color} strokeWidth="2" />}
       {/* Dots A */}
       {ptsA.map((p, i) => dataA?.[BODY_METRICS[i].key] && (
-        <circle key={i} cx={p.x} cy={p.y} r="4" fill={color} stroke="#060606" strokeWidth="1.5" />
+        <circle key={i} cx={p.x} cy={p.y} r="4" fill={color} stroke="#18181b" strokeWidth="1.5" />
       ))}
       {/* Dots B */}
       {ptsB && ptsB.map((p, i) => dataB?.[BODY_METRICS[i].key] && (
-        <circle key={i} cx={p.x} cy={p.y} r="4" fill="#fff" stroke="#060606" strokeWidth="1.5" />
+        <circle key={i} cx={p.x} cy={p.y} r="4" fill="#fff" stroke="#18181b" strokeWidth="1.5" />
       ))}
     </svg>
   );
@@ -2007,24 +2007,24 @@ function BodyTab({ data, setData }) {
   const entryB = athleteData.find(r => r.date === compareDateB);
   const latest = athleteData[0];
 
-  const inputStyle = { background: "#0d0d0d", border: "1px solid #222", borderRadius: 8, padding: "9px 12px", color: "#fff", fontSize: 14, outline: "none", fontFamily: "inherit", width: "100%", boxSizing: "border-box" };
+  const inputStyle = { background: "#27272a", border: "1px solid #222", borderRadius: 8, padding: "9px 12px", color: "#fff", fontSize: 14, outline: "none", fontFamily: "inherit", width: "100%", boxSizing: "border-box" };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", gap: 4, background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 10, padding: 4 }}>
+        <div style={{ display: "flex", gap: 4, background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 10, padding: 4 }}>
           {["Suivi", "Comparaison"].map(t => (
-            <button key={t} onClick={() => setSubTab(t)} style={{ padding: "7px 18px", borderRadius: 7, border: "none", background: subTab === t ? col.main : "transparent", color: subTab === t ? "#000" : "#555", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}>{t}</button>
+            <button key={t} onClick={() => setSubTab(t)} style={{ padding: "7px 18px", borderRadius: 7, border: "none", background: subTab === t ? col.main : "transparent", color: subTab === t ? "#000" : "#888", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}>{t}</button>
           ))}
         </div>
-        <button onClick={() => { setSubTab("+"); setEditingId(null); setForm(defaultBodyForm); }} style={{ width: 36, height: 36, borderRadius: 10, border: `1.5px solid ${subTab === "+" ? "#e53e3e" : "#333"}`, background: subTab === "+" ? "#e53e3e" : "transparent", color: subTab === "+" ? "#fff" : "#888", fontWeight: 900, fontSize: 20, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+        <button onClick={() => { setSubTab("+"); setEditingId(null); setForm(defaultBodyForm); }} style={{ width: 36, height: 36, borderRadius: 10, border: `1.5px solid ${subTab === "+" ? "#e53e3e" : "#52525b"}`, background: subTab === "+" ? "#e53e3e" : "transparent", color: subTab === "+" ? "#fff" : "#888", fontWeight: 900, fontSize: 20, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
       </div>
 
       {subTab === "+" && (
-        <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 16, padding: "20px 24px" }}>
+        <div style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 16, padding: "20px 24px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <div style={{ color: "#fff", fontWeight: 800, fontSize: 15 }}>{editingId ? "✎ Modifier" : "Ajouter une mesure"}</div>
-            {editingId && <button onClick={() => { setEditingId(null); setForm(defaultBodyForm); setSubTab("Suivi"); }} style={{ background: "transparent", border: "1px solid #333", borderRadius: 8, color: "#555", fontSize: 12, padding: "5px 12px", cursor: "pointer", fontFamily: "inherit" }}>Annuler</button>}
+            {editingId && <button onClick={() => { setEditingId(null); setForm(defaultBodyForm); setSubTab("Suivi"); }} style={{ background: "transparent", border: "1px solid #333", borderRadius: 8, color: "#888", fontSize: 12, padding: "5px 12px", cursor: "pointer", fontFamily: "inherit" }}>Annuler</button>}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -2054,37 +2054,37 @@ function BodyTab({ data, setData }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={{ display: "flex", gap: 8 }}>
             {ATHLETES.map(a => (
-              <button key={a} onClick={() => setSelectedAthlete(a)} style={{ padding: "6px 18px", borderRadius: "999px", border: selectedAthlete === a ? `1.5px solid ${col.main}` : "1.5px solid #222", background: selectedAthlete === a ? col.light : "transparent", color: selectedAthlete === a ? col.main : "#555", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>{a}</button>
+              <button key={a} onClick={() => setSelectedAthlete(a)} style={{ padding: "6px 18px", borderRadius: "999px", border: selectedAthlete === a ? `1.5px solid ${col.main}` : "1.5px solid #222", background: selectedAthlete === a ? col.light : "transparent", color: selectedAthlete === a ? col.main : "#888", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>{a}</button>
             ))}
           </div>
           {latest && (
-            <div style={{ background: "#0a0a0a", border: `1px solid ${col.border}`, borderRadius: 16, padding: "20px 24px" }}>
+            <div style={{ background: "#1f1f23", border: `1px solid ${col.border}`, borderRadius: 16, padding: "20px 24px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
                 <div>
-                  <div style={{ color: "#555", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>Dernière mesure · {latest.date}</div>
-                  {latest.weight && <div style={{ color: "#fff", fontWeight: 900, fontSize: 36, marginTop: 4 }}>{latest.weight} <span style={{ color: "#555", fontSize: 16, fontWeight: 400 }}>kg</span></div>}
+                  <div style={{ color: "#888", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>Dernière mesure · {latest.date}</div>
+                  {latest.weight && <div style={{ color: "#fff", fontWeight: 900, fontSize: 36, marginTop: 4 }}>{latest.weight} <span style={{ color: "#888", fontSize: 16, fontWeight: 400 }}>kg</span></div>}
                 </div>
                 <ActionButtons accentColor={col.main} onEdit={() => startEdit(latest)} onDelete={() => deleteEntry(latest.id)} />
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 10 }}>
                 {BODY_METRICS.map(m => latest[m.key] && (
-                  <div key={m.key} style={{ background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: 10, padding: "10px 14px" }}>
-                    <div style={{ color: "#555", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>{m.label}</div>
-                    <div style={{ color: col.main, fontWeight: 800, fontSize: 18 }}>{latest[m.key]}<span style={{ color: "#555", fontSize: 12, fontWeight: 400 }}> {m.unit}</span></div>
+                  <div key={m.key} style={{ background: "#27272a", border: "1px solid #1a1a1a", borderRadius: 10, padding: "10px 14px" }}>
+                    <div style={{ color: "#888", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>{m.label}</div>
+                    <div style={{ color: col.main, fontWeight: 800, fontSize: 18 }}>{latest[m.key]}<span style={{ color: "#888", fontSize: 12, fontWeight: 400 }}> {m.unit}</span></div>
                   </div>
                 ))}
               </div>
             </div>
           )}
-          {athleteData.length === 0 && <div style={{ color: "#333", textAlign: "center", padding: 40 }}>Aucune mesure enregistrée pour {selectedAthlete}.</div>}
+          {athleteData.length === 0 && <div style={{ color: "#52525b", textAlign: "center", padding: 40 }}>Aucune mesure enregistrée pour {selectedAthlete}.</div>}
           {athleteData.slice(1).map(r => (
-            <div key={r.id} style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 12, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div key={r.id} style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 12, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
-                <div style={{ color: "#555", fontSize: 12, marginBottom: 4 }}>{r.date}</div>
+                <div style={{ color: "#888", fontSize: 12, marginBottom: 4 }}>{r.date}</div>
                 <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                   {r.weight && <span style={{ color: "#fff", fontWeight: 700, fontSize: 14 }}>{r.weight} kg</span>}
                   {BODY_METRICS.filter(m => r[m.key]).map(m => (
-                    <span key={m.key} style={{ color: "#555", fontSize: 12 }}>{m.label}: <span style={{ color: "#888" }}>{r[m.key]}{m.unit}</span></span>
+                    <span key={m.key} style={{ color: "#888", fontSize: 12 }}>{m.label}: <span style={{ color: "#888" }}>{r[m.key]}{m.unit}</span></span>
                   ))}
                 </div>
               </div>
@@ -2098,14 +2098,14 @@ function BodyTab({ data, setData }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <div style={{ display: "flex", gap: 8 }}>
             {ATHLETES.map(a => (
-              <button key={a} onClick={() => setSelectedAthlete(a)} style={{ padding: "6px 18px", borderRadius: "999px", border: selectedAthlete === a ? `1.5px solid ${col.main}` : "1.5px solid #222", background: selectedAthlete === a ? col.light : "transparent", color: selectedAthlete === a ? col.main : "#555", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>{a}</button>
+              <button key={a} onClick={() => setSelectedAthlete(a)} style={{ padding: "6px 18px", borderRadius: "999px", border: selectedAthlete === a ? `1.5px solid ${col.main}` : "1.5px solid #222", background: selectedAthlete === a ? col.light : "transparent", color: selectedAthlete === a ? col.main : "#888", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>{a}</button>
             ))}
           </div>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             {[{ label: "Date A", val: compareDateA, set: setCompareDateA, color: col.main }, { label: "Date B", val: compareDateB, set: setCompareDateB, color: "#fff" }].map(({ label, val, set, color }) => (
               <div key={label} style={{ flex: 1, minWidth: 160, display: "flex", flexDirection: "column", gap: 6 }}>
-                <label style={{ color: "#555", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}><span style={{ display: "inline-block", width: 10, height: 10, borderRadius: "50%", background: color, marginRight: 6 }} />{label}</label>
-                <select value={val} onChange={e => set(e.target.value)} style={{ background: "#0d0d0d", border: "1px solid #222", borderRadius: 8, padding: "9px 12px", color: val ? "#fff" : "#555", fontSize: 13, outline: "none", fontFamily: "inherit", cursor: "pointer" }}>
+                <label style={{ color: "#888", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}><span style={{ display: "inline-block", width: 10, height: 10, borderRadius: "50%", background: color, marginRight: 6 }} />{label}</label>
+                <select value={val} onChange={e => set(e.target.value)} style={{ background: "#27272a", border: "1px solid #222", borderRadius: 8, padding: "9px 12px", color: val ? "#fff" : "#888", fontSize: 13, outline: "none", fontFamily: "inherit", cursor: "pointer" }}>
                   <option value="">Choisir une date…</option>
                   {availableDates.map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
@@ -2119,10 +2119,10 @@ function BodyTab({ data, setData }) {
               </div>
               <div style={{ flex: 1, minWidth: 200 }}>
                 {entryA?.weight && <div style={{ marginBottom: 12 }}>
-                  <div style={{ color: "#555", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>Poids</div>
+                  <div style={{ color: "#888", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>Poids</div>
                   <div style={{ display: "flex", gap: 16 }}>
-                    {entryA && <span style={{ color: col.main, fontWeight: 800, fontSize: 16 }}>{entryA.weight} kg <span style={{ color: "#555", fontSize: 11 }}>{compareDateA}</span></span>}
-                    {entryB && entryB.weight && <span style={{ color: "#888", fontWeight: 800, fontSize: 16 }}>{entryB.weight} kg <span style={{ color: "#555", fontSize: 11 }}>{compareDateB}</span></span>}
+                    {entryA && <span style={{ color: col.main, fontWeight: 800, fontSize: 16 }}>{entryA.weight} kg <span style={{ color: "#888", fontSize: 11 }}>{compareDateA}</span></span>}
+                    {entryB && entryB.weight && <span style={{ color: "#888", fontWeight: 800, fontSize: 16 }}>{entryB.weight} kg <span style={{ color: "#888", fontSize: 11 }}>{compareDateB}</span></span>}
                   </div>
                 </div>}
                 {BODY_METRICS.map(m => {
@@ -2131,11 +2131,11 @@ function BodyTab({ data, setData }) {
                   const diff = vA && vB ? (parseFloat(vA) - parseFloat(vB)).toFixed(1) : null;
                   return (
                     <div key={m.key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #111" }}>
-                      <span style={{ color: "#555", fontSize: 12 }}>{m.label}</span>
+                      <span style={{ color: "#888", fontSize: 12 }}>{m.label}</span>
                       <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
                         {vA && <span style={{ color: col.main, fontWeight: 700, fontSize: 13 }}>{vA}{m.unit}</span>}
                         {vB && <span style={{ color: "#888", fontWeight: 700, fontSize: 13 }}>{vB}{m.unit}</span>}
-                        {diff !== null && <span style={{ color: parseFloat(diff) > 0 ? "#4ade80" : parseFloat(diff) < 0 ? "#f87171" : "#555", fontSize: 11, fontWeight: 700 }}>{parseFloat(diff) > 0 ? "+" : ""}{diff}</span>}
+                        {diff !== null && <span style={{ color: parseFloat(diff) > 0 ? "#4ade80" : parseFloat(diff) < 0 ? "#f87171" : "#888", fontSize: 11, fontWeight: 700 }}>{parseFloat(diff) > 0 ? "+" : ""}{diff}</span>}
                       </div>
                     </div>
                   );
@@ -2143,7 +2143,7 @@ function BodyTab({ data, setData }) {
               </div>
             </div>
           )}
-          {!entryA && !entryB && <div style={{ color: "#333", textAlign: "center", padding: 40 }}>Sélectionnez deux dates pour comparer.</div>}
+          {!entryA && !entryB && <div style={{ color: "#52525b", textAlign: "center", padding: 40 }}>Sélectionnez deux dates pour comparer.</div>}
         </div>
       )}
     </div>
@@ -2278,25 +2278,25 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates, partners, se
     ? [...data].filter(r => r.templateId === compareTemplate && r.totalTime).sort((a, b) => a.date?.localeCompare(b.date))
     : [];
 
-  const inputStyle = { background: "#0d0d0d", border: "1px solid #222", borderRadius: 8, padding: "9px 12px", color: "#fff", fontSize: 14, outline: "none", fontFamily: "inherit", width: "100%", boxSizing: "border-box" };
+  const inputStyle = { background: "#27272a", border: "1px solid #222", borderRadius: 8, padding: "9px 12px", color: "#fff", fontSize: 14, outline: "none", fontFamily: "inherit", width: "100%", boxSizing: "border-box" };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {/* Sub-tabs */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", gap: 4, background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 10, padding: 4 }}>
+        <div style={{ display: "flex", gap: 4, background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 10, padding: 4 }}>
           {["Historique", "Progression", "Templates"].map(t => (
-            <button key={t} onClick={() => setSubTab(t)} style={{ padding: "7px 14px", borderRadius: 7, border: "none", background: subTab === t ? col.main : "transparent", color: subTab === t ? "#000" : "#555", fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}>{t}</button>
+            <button key={t} onClick={() => setSubTab(t)} style={{ padding: "7px 14px", borderRadius: 7, border: "none", background: subTab === t ? col.main : "transparent", color: subTab === t ? "#000" : "#888", fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}>{t}</button>
           ))}
         </div>
-        <button onClick={() => { setSubTab("+"); setEditingId(null); setForm(defaultTrainingForm); }} style={{ width: 36, height: 36, borderRadius: 10, border: `1.5px solid ${subTab === "+" ? "#e53e3e" : "#333"}`, background: subTab === "+" ? "#e53e3e" : "transparent", color: subTab === "+" ? "#fff" : "#888", fontWeight: 900, fontSize: 20, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+        <button onClick={() => { setSubTab("+"); setEditingId(null); setForm(defaultTrainingForm); }} style={{ width: 36, height: 36, borderRadius: 10, border: `1.5px solid ${subTab === "+" ? "#e53e3e" : "#52525b"}`, background: subTab === "+" ? "#e53e3e" : "transparent", color: subTab === "+" ? "#fff" : "#888", fontWeight: 900, fontSize: 20, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
       </div>
 
       {subTab === "+" && (
-        <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 16, padding: "20px 24px" }}>
+        <div style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 16, padding: "20px 24px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <div style={{ color: "#fff", fontWeight: 800, fontSize: 15 }}>{editingId ? "✎ Modifier" : "Ajouter une séance"}</div>
-            {editingId && <button onClick={() => { setEditingId(null); setForm(defaultTrainingForm); setSubTab("Historique"); }} style={{ background: "transparent", border: "1px solid #333", borderRadius: 8, color: "#555", fontSize: 12, padding: "5px 12px", cursor: "pointer", fontFamily: "inherit" }}>Annuler</button>}
+            {editingId && <button onClick={() => { setEditingId(null); setForm(defaultTrainingForm); setSubTab("Historique"); }} style={{ background: "transparent", border: "1px solid #333", borderRadius: 8, color: "#888", fontSize: 12, padding: "5px 12px", cursor: "pointer", fontFamily: "inherit" }}>Annuler</button>}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginBottom: 16 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -2324,15 +2324,15 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates, partners, se
                 {["Solo", "Partagé"].map(t => (
                   <button key={t} onClick={() => update("isShared", t === "Partagé")} style={{
                     padding: "7px 16px", borderRadius: 8, fontFamily: "inherit", cursor: "pointer", fontWeight: 700, fontSize: 12,
-                    border: `1.5px solid ${(t === "Partagé") === form.isShared ? col.main : "#222"}`,
+                    border: `1.5px solid ${(t === "Partagé") === form.isShared ? col.main : "#3f3f46"}`,
                     background: (t === "Partagé") === form.isShared ? col.main + "22" : "transparent",
-                    color: (t === "Partagé") === form.isShared ? col.main : "#555",
+                    color: (t === "Partagé") === form.isShared ? col.main : "#888",
                   }}>{t}</button>
                 ))}
               </div>
               {form.isShared && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <label style={{ color: "#555", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>Partenaire</label>
+                  <label style={{ color: "#888", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>Partenaire</label>
                   <div style={{ display: "flex", gap: 6 }}>
                     <select value={form.trainingPartner} onChange={e => update("trainingPartner", e.target.value)} style={{ ...inputStyle, flex: 1 }}>
                       <option value="">— Choisir —</option>
@@ -2341,9 +2341,9 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates, partners, se
                     </select>
                     <button onClick={() => setShowAddPartner(v => !v)} style={{
                       width: 36, height: 36, borderRadius: 8, flexShrink: 0,
-                      border: `1.5px solid ${showAddPartner ? col.main : "#222"}`,
+                      border: `1.5px solid ${showAddPartner ? col.main : "#3f3f46"}`,
                       background: showAddPartner ? col.main + "22" : "transparent",
-                      color: showAddPartner ? col.main : "#555",
+                      color: showAddPartner ? col.main : "#888",
                       fontWeight: 900, fontSize: 18, cursor: "pointer",
                       display: "flex", alignItems: "center", justifyContent: "center",
                     }}>+</button>
@@ -2368,7 +2368,7 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates, partners, se
 
           {selectedTemplate && (
             <div>
-              <div style={{ color: "#555", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Temps par segment (optionnel)</div>
+              <div style={{ color: "#888", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Temps par segment (optionnel)</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8, marginBottom: 16 }}>
                 {selectedTemplate.segments.map((seg, i) => (
                   <div key={i} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -2393,7 +2393,7 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates, partners, se
       {subTab === "Templates" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           {/* Créer un template */}
-          <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 16, padding: "20px 24px" }}>
+          <div style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 16, padding: "20px 24px" }}>
             <div style={{ color: "#fff", fontWeight: 800, fontSize: 14, marginBottom: 14 }}>{editingTemplate ? "✎ Modifier le template" : "Créer un template"}</div>
             <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
               <input value={templateForm.name} onChange={e => setTemplateForm(f => ({ ...f, name: e.target.value }))} placeholder="Nom du template (ex: Roxzone, Full Hyrox…)" style={{ ...inputStyle, flex: 1 }} />
@@ -2409,7 +2409,7 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates, partners, se
                 onDragEnd={onDragEnd}
                 style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center", cursor: "grab", opacity: 1, transition: "opacity 0.15s" }}>
                 {/* Drag handle */}
-                <div style={{ color: "#333", fontSize: 16, cursor: "grab", flexShrink: 0, userSelect: "none", paddingTop: 2 }}>⠿</div>
+                <div style={{ color: "#52525b", fontSize: 16, cursor: "grab", flexShrink: 0, userSelect: "none", paddingTop: 2 }}>⠿</div>
                 <select value={seg.type} onChange={e => updateTplSegment(i, "type", e.target.value)} style={{ ...inputStyle, flex: 2 }}>
                   {HYROX_STATION_BASES.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
@@ -2428,13 +2428,13 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates, partners, se
 
           {/* Liste des templates */}
           {templates.length === 0 ? (
-            <div style={{ color: "#333", textAlign: "center", padding: 40 }}>Aucun template créé.</div>
+            <div style={{ color: "#52525b", textAlign: "center", padding: 40 }}>Aucun template créé.</div>
           ) : templates.map(t => (
-            <div key={t.id} style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 12, padding: "14px 18px" }}>
+            <div key={t.id} style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 12, padding: "14px 18px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                 <span style={{ color: "#fff", fontWeight: 700, fontSize: 14 }}>{t.name}</span>
                 <div style={{ display: "flex", gap: 6 }}>
-                  <button onClick={() => { setTemplateForm({ name: t.name, segments: t.segments }); setEditingTemplate(t.id); }} style={{ padding: "4px 10px", borderRadius: 7, border: "1px solid #222", background: "transparent", color: "#555", fontSize: 12, cursor: "pointer" }}>✎</button>
+                  <button onClick={() => { setTemplateForm({ name: t.name, segments: t.segments }); setEditingTemplate(t.id); }} style={{ padding: "4px 10px", borderRadius: 7, border: "1px solid #222", background: "transparent", color: "#888", fontSize: 12, cursor: "pointer" }}>✎</button>
                   <button onClick={() => deleteTemplate(t.id)} style={{ padding: "4px 10px", borderRadius: 7, border: "1px solid #222", background: "transparent", color: "#f87144", fontSize: 12, cursor: "pointer" }}>×</button>
                 </div>
               </div>
@@ -2454,13 +2454,13 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates, partners, se
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <label style={{ color: "#666", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>Template</label>
-            <select value={compareTemplate} onChange={e => setCompareTemplate(e.target.value)} style={{ background: "#0d0d0d", border: "1px solid #222", borderRadius: 8, padding: "10px 14px", color: compareTemplate ? "#fff" : "#555", fontSize: 14, outline: "none", fontFamily: "inherit", cursor: "pointer", maxWidth: 320 }}>
+            <select value={compareTemplate} onChange={e => setCompareTemplate(e.target.value)} style={{ background: "#27272a", border: "1px solid #222", borderRadius: 8, padding: "10px 14px", color: compareTemplate ? "#fff" : "#888", fontSize: 14, outline: "none", fontFamily: "inherit", cursor: "pointer", maxWidth: 320 }}>
               <option value="">Choisir un template…</option>
               {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
           </div>
 
-          {compareTemplate && progressionData.length === 0 && <div style={{ color: "#333", textAlign: "center", padding: 40 }}>Aucune séance enregistrée avec ce template.</div>}
+          {compareTemplate && progressionData.length === 0 && <div style={{ color: "#52525b", textAlign: "center", padding: 40 }}>Aucune séance enregistrée avec ce template.</div>}
 
           {progressionData.length > 0 && (() => {
             const allSecs = progressionData.map(r => parseTimeInput(r.totalTime)).filter(Boolean);
@@ -2485,16 +2485,16 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates, partners, se
                     </div>
                   ))}
                 </div>
-                <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "hidden" }}>
+                <div style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "hidden" }}>
                   <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: "block" }}>
                     {[minS, minS + range/2, maxS].map((s, i) => (
                       <g key={i}>
-                        <line x1={PAD_L} y1={toY(s)} x2={W-PAD_R} y2={toY(s)} stroke="#1e1e1e" strokeWidth="1" />
-                        <text x={PAD_L-8} y={toY(s)+4} fill="#555" fontSize="10" textAnchor="end">{formatTime(Math.round(s))}</text>
+                        <line x1={PAD_L} y1={toY(s)} x2={W-PAD_R} y2={toY(s)} stroke="#2e2e33" strokeWidth="1" />
+                        <text x={PAD_L-8} y={toY(s)+4} fill="#888" fontSize="10" textAnchor="end">{formatTime(Math.round(s))}</text>
                       </g>
                     ))}
                     {allDates.filter((_, i) => i % Math.max(1, Math.ceil(allDates.length/6)) === 0 || i === allDates.length-1).map(d => (
-                      <text key={d} x={toX(d)} y={H-PAD_B+18} fill="#555" fontSize="10" textAnchor="middle">{d.slice(0,7)}</text>
+                      <text key={d} x={toX(d)} y={H-PAD_B+18} fill="#888" fontSize="10" textAnchor="middle">{d.slice(0,7)}</text>
                     ))}
                     {ATHLETES.filter(a => byAthlete[a].length).map(a => {
                       const acol = ATHLETE_COLORS[a];
@@ -2509,7 +2509,7 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates, partners, se
                             return (
                               <g key={i}>
                                 {pr && <circle cx={p.x} cy={p.y} r="10" fill={acol} opacity="0.15" />}
-                                <circle cx={p.x} cy={p.y} r={pr ? 6 : 5} fill={acol} stroke="#0a0a0a" strokeWidth="2" />
+                                <circle cx={p.x} cy={p.y} r={pr ? 6 : 5} fill={acol} stroke="#1f1f23" strokeWidth="2" />
                                 {pr && <text x={p.x} y={p.y-14} fill={acol} fontSize="10" textAnchor="middle" fontWeight="700">★PR</text>}
                                 <text x={p.x} y={p.y+(p.y < PAD_T+30 ? 18 : -12)} fill={acol} fontSize="10" textAnchor="middle" opacity="0.8">{pr ? "" : formatTime(s)}</text>
                               </g>
@@ -2522,10 +2522,10 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates, partners, se
                 </div>
 
                 {/* Tableau détail */}
-                <div style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "auto" }}>
-                  <div style={{ minWidth: 400, display: "grid", gridTemplateColumns: `100px 80px 90px 80px${tpl ? tpl.segments.map(() => " 90px").join("") : ""}`, background: "#0d0d0d", borderBottom: "1px solid #1a1a1a" }}>
+                <div style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "auto" }}>
+                  <div style={{ minWidth: 400, display: "grid", gridTemplateColumns: `100px 80px 90px 80px${tpl ? tpl.segments.map(() => " 90px").join("") : ""}`, background: "#27272a", borderBottom: "1px solid #1a1a1a" }}>
                     {["Date", "Athlète", "Total", "Évol.", ...(tpl?.segments.map(s => `${s.distance||""}${s.unit||""} ${s.type}`) || [])].map(h => (
-                      <div key={h} style={{ padding: "10px 12px", color: "#444", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</div>
+                      <div key={h} style={{ padding: "10px 12px", color: "#71717a", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</div>
                     ))}
                   </div>
                   {progressionData.map((r, i) => {
@@ -2536,11 +2536,11 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates, partners, se
                     const isPR = secs === Math.min(...progressionData.filter(x => x.athlete === r.athlete).map(x => parseTimeInput(x.totalTime)).filter(Boolean));
                     const acol = ATHLETE_COLORS[r.athlete];
                     return (
-                      <div key={r.id} style={{ minWidth: 400, display: "grid", gridTemplateColumns: `100px 80px 90px 80px${tpl ? tpl.segments.map(() => " 90px").join("") : ""}`, borderBottom: i < progressionData.length-1 ? "1px solid #111" : "none", background: i%2===0 ? "#0a0a0a" : "#0d0d0d" }}>
+                      <div key={r.id} style={{ minWidth: 400, display: "grid", gridTemplateColumns: `100px 80px 90px 80px${tpl ? tpl.segments.map(() => " 90px").join("") : ""}`, borderBottom: i < progressionData.length-1 ? "1px solid #111" : "none", background: i%2===0 ? "#1f1f23" : "#27272a" }}>
                         <div style={{ padding: "10px 12px", color: "#777", fontSize: 12 }}>{r.date}{isPR && <span style={{ marginLeft: 6, color: col.main, fontSize: 9, fontWeight: 800 }}>★PR</span>}</div>
                         <div style={{ padding: "10px 12px" }}><span style={{ color: acol, fontSize: 12, fontWeight: 700 }}>{r.athlete}</span></div>
                         <div style={{ padding: "10px 12px", color: "#fff", fontWeight: 800, fontSize: 13 }}>{r.totalTime}</div>
-                        <div style={{ padding: "10px 12px", fontSize: 12, fontWeight: 700, color: diff === null ? "#333" : diff < 0 ? "#4ade80" : "#f87171" }}>{diff === null ? "—" : `${diff < 0 ? "▼" : "▲"} ${formatTime(Math.abs(diff))}`}</div>
+                        <div style={{ padding: "10px 12px", fontSize: 12, fontWeight: 700, color: diff === null ? "#52525b" : diff < 0 ? "#4ade80" : "#f87171" }}>{diff === null ? "—" : `${diff < 0 ? "▼" : "▲"} ${formatTime(Math.abs(diff))}`}</div>
                         {tpl?.segments.map((seg, si) => (
                           <div key={si} style={{ padding: "10px 12px", color: "#666", fontSize: 12 }}>{r.segments?.[si] || "—"}</div>
                         ))}
@@ -2558,24 +2558,24 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates, partners, se
         <div>
           <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
             {["Tous", ...ATHLETES].map(f => (
-              <button key={f} onClick={() => setFilter(f)} style={{ padding: "5px 16px", borderRadius: "999px", border: filter === f ? `1.5px solid ${col.main}` : "1.5px solid #222", background: filter === f ? col.light : "transparent", color: filter === f ? col.main : "#555", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>{f}</button>
+              <button key={f} onClick={() => setFilter(f)} style={{ padding: "5px 16px", borderRadius: "999px", border: filter === f ? `1.5px solid ${col.main}` : "1.5px solid #222", background: filter === f ? col.light : "transparent", color: filter === f ? col.main : "#888", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>{f}</button>
             ))}
           </div>
           {sorted.length === 0 ? (
-            <div style={{ color: "#333", textAlign: "center", padding: 40 }}>Aucune séance enregistrée</div>
+            <div style={{ color: "#52525b", textAlign: "center", padding: 40 }}>Aucune séance enregistrée</div>
           ) : sorted.map(r => {
             const tpl = templates.find(t => String(t.id) === String(r.templateId));
             return (
-              <div key={r.id} style={{ background: "#0a0a0a", border: "1px solid #1a1a1a", borderRadius: 12, padding: "14px 18px", marginBottom: 8 }}>
+              <div key={r.id} style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 12, padding: "14px 18px", marginBottom: 8 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                   <div>
                     <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 4 }}>
                       <Badge color={col.main}>{r.athlete}</Badge>
                       <span style={{ color: "#fff", fontWeight: 700 }}>{tpl?.name || "—"}</span>
-                      {r.trainingPartner && <span style={{ color: "#555", fontSize: 12 }}>avec {r.trainingPartner}</span>}
-                      <span style={{ color: "#555", fontSize: 12 }}>{r.date}</span>
+                      {r.trainingPartner && <span style={{ color: "#888", fontSize: 12 }}>avec {r.trainingPartner}</span>}
+                      <span style={{ color: "#888", fontSize: 12 }}>{r.date}</span>
                     </div>
-                    {r.notes && <div style={{ color: "#555", fontSize: 12 }}>{r.notes}</div>}
+                    {r.notes && <div style={{ color: "#888", fontSize: 12 }}>{r.notes}</div>}
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
                     <ActionButtons accentColor={col.main} onEdit={() => startEdit(r)} onDelete={() => deleteEntry(r.id)} />
@@ -2586,7 +2586,7 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates, partners, se
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
                     {tpl.segments.map((seg, i) => r.segments[i] && (
                       <div key={i} style={{ background: col.light, border: `1px solid ${col.border}`, borderRadius: 6, padding: "3px 8px", fontSize: 11 }}>
-                        <span style={{ color: "#555" }}>{seg.distance ? `${seg.distance}${seg.unit} ` : ""}{seg.type}: </span>
+                        <span style={{ color: "#888" }}>{seg.distance ? `${seg.distance}${seg.unit} ` : ""}{seg.type}: </span>
                         <span style={{ color: col.main, fontWeight: 700 }}>{r.segments[i]}</span>
                       </div>
                     ))}
@@ -2610,7 +2610,7 @@ function PRToast({ message, onClose }) {
   return (
     <div style={{
       position: "fixed", bottom: 24, right: 24, zIndex: 1000,
-      background: "#1a1a1a", border: "1px solid #A8FF3E44",
+      background: "#303036", border: "1px solid #A8FF3E44",
       borderRadius: 14, padding: "14px 20px",
       display: "flex", alignItems: "center", gap: 12,
       boxShadow: "0 8px 32px #00000088",
@@ -2621,7 +2621,7 @@ function PRToast({ message, onClose }) {
         <div style={{ color: "#A8FF3E", fontWeight: 800, fontSize: 13 }}>Nouveau record personnel !</div>
         <div style={{ color: "#888", fontSize: 12, marginTop: 2 }}>{message}</div>
       </div>
-      <button onClick={onClose} style={{ background: "none", border: "none", color: "#555", fontSize: 18, cursor: "pointer", marginLeft: 8 }}>×</button>
+      <button onClick={onClose} style={{ background: "none", border: "none", color: "#888", fontSize: 18, cursor: "pointer", marginLeft: 8 }}>×</button>
     </div>
   );
 }
@@ -2659,10 +2659,10 @@ function Dashboard({ runData, hyroxData, kartingData, bodyData }) {
           const totalActivities = runData.filter(r => r.athlete === a).length + hyroxData.filter(r => r.athlete === a).length + (kartingData||[]).filter(r => r.athlete === a).length;
 
           return (
-            <div key={a} style={{ flex: 1, minWidth: 260, background: "#0f0f0f", border: "1px solid #1e1e1e", borderRadius: 16, padding: "20px 24px" }}>
+            <div key={a} style={{ flex: 1, minWidth: 260, background: "#1f1f23", border: "1px solid #1e1e1e", borderRadius: 16, padding: "20px 24px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                 <div style={{ color: "#fff", fontWeight: 900, fontSize: 20 }}>{a}</div>
-                <div style={{ color: "#444", fontSize: 12 }}>{totalActivities} activité{totalActivities > 1 ? "s" : ""}</div>
+                <div style={{ color: "#71717a", fontSize: 12 }}>{totalActivities} activité{totalActivities > 1 ? "s" : ""}</div>
               </div>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
                 <StatCard label="Sorties run" value={runData.filter(r => r.athlete === a).length} color={SPORT_COLORS["Course à pied"].main} />
@@ -2672,22 +2672,22 @@ function Dashboard({ runData, hyroxData, kartingData, bodyData }) {
 
               {/* PRs résumé */}
               <div style={{ borderTop: "1px solid #1a1a1a", paddingTop: 14 }}>
-                <div style={{ color: "#444", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>🏆 Records</div>
+                <div style={{ color: "#71717a", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>🏆 Records</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   {Object.entries(runPRs).slice(0, 3).map(([dist, pr]) => (
                     <div key={dist} style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ color: "#555", fontSize: 12 }}>🏃 {dist}</span>
+                      <span style={{ color: "#888", fontSize: 12 }}>🏃 {dist}</span>
                       <span style={{ color: SPORT_COLORS["Course à pied"].main, fontWeight: 700, fontSize: 12 }}>{formatTime(pr.secs)}</span>
                     </div>
                   ))}
                   {hyroxPR && (
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ color: "#555", fontSize: 12 }}>⚡ Hyrox</span>
+                      <span style={{ color: "#888", fontSize: 12 }}>⚡ Hyrox</span>
                       <span style={{ color: SPORT_COLORS["Hyrox"].main, fontWeight: 700, fontSize: 12 }}>{formatTime(hyroxPR.totalSecs)}</span>
                     </div>
                   )}
                   {!Object.keys(runPRs).length && !hyroxPR && (
-                    <div style={{ color: "#333", fontSize: 12 }}>Aucun record encore</div>
+                    <div style={{ color: "#52525b", fontSize: 12 }}>Aucun record encore</div>
                   )}
                 </div>
               </div>
@@ -2700,13 +2700,13 @@ function Dashboard({ runData, hyroxData, kartingData, bodyData }) {
       <div>
         <div style={{ color: "#fff", fontWeight: 800, fontSize: 15, marginBottom: 12 }}>Activité récente</div>
         {recent.length === 0 ? (
-          <div style={{ color: "#333", textAlign: "center", padding: 40 }}>Aucune activité pour l'instant. Commencez à enregistrer !</div>
+          <div style={{ color: "#52525b", textAlign: "center", padding: 40 }}>Aucune activité pour l'instant. Commencez à enregistrer !</div>
         ) : recent.map(r => {
           const col = SPORT_COLORS[r.sport];
           return (
             <div key={r.id} style={{
               display: "flex", justifyContent: "space-between", alignItems: "center",
-              padding: "12px 18px", background: "#0a0a0a", border: "1px solid #1a1a1a",
+              padding: "12px 18px", background: "#1f1f23", border: "1px solid #1a1a1a",
               borderRadius: 12, marginBottom: 8,
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -2715,9 +2715,9 @@ function Dashboard({ runData, hyroxData, kartingData, bodyData }) {
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     <Badge color={col.main}>{r.athlete}</Badge>
                     <span style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>{r.sport}</span>
-                    {r.raceName && <span style={{ color: "#555", fontSize: 12 }}>· {r.raceName}</span>}
+                    {r.raceName && <span style={{ color: "#888", fontSize: 12 }}>· {r.raceName}</span>}
                   </div>
-                  <div style={{ color: "#555", fontSize: 12, marginTop: 2 }}>{r.date}</div>
+                  <div style={{ color: "#888", fontSize: 12, marginTop: 2 }}>{r.date}</div>
                 </div>
               </div>
               <div style={{ color: col.main, fontWeight: 700, fontSize: 15 }}>
@@ -2887,7 +2887,7 @@ export default function App() {
   const setHyroxTrainingData = (updater) => setHyroxTrainingDataRaw(prev => typeof updater === "function" ? updater(prev) : updater);
 
   return (
-    <div style={{ minHeight: "100vh", background: "#060606", color: "#fff", fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: "#18181b", color: "#fff", fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800;900&display=swap');
         * { box-sizing: border-box; }
@@ -2920,14 +2920,14 @@ export default function App() {
       <div className="header-pad" style={{ padding: "28px 32px 0", borderBottom: "1px solid #111" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
           <div className="header-title" style={{ fontSize: 28, fontWeight: 900, letterSpacing: "-0.03em" }}>
-            TOM <span style={{ color: "#333" }}>&</span> CAMILLE
+            TOM <span style={{ color: "#52525b" }}>&</span> CAMILLE
           </div>
-          <div className="hide-mobile" style={{ color: "#444", fontSize: 13, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>Sport Tracker</div>
+          <div className="hide-mobile" style={{ color: "#71717a", fontSize: 13, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>Sport Tracker</div>
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
             {allReady ? (
-              <><div style={{ width: 7, height: 7, borderRadius: "50%", background: "#4ade80" }} /><span style={{ color: "#444", fontSize: 11 }}>Synchronisé</span></>
+              <><div style={{ width: 7, height: 7, borderRadius: "50%", background: "#4ade80" }} /><span style={{ color: "#71717a", fontSize: 11 }}>Synchronisé</span></>
             ) : (
-              <><div style={{ width: 7, height: 7, borderRadius: "50%", background: "#FF6B35", animation: "spin 1s linear infinite" }} /><span style={{ color: "#555", fontSize: 11 }}>Connexion…</span></>
+              <><div style={{ width: 7, height: 7, borderRadius: "50%", background: "#FF6B35", animation: "spin 1s linear infinite" }} /><span style={{ color: "#888", fontSize: 11 }}>Connexion…</span></>
             )}
           </div>
         </div>
@@ -2940,7 +2940,7 @@ export default function App() {
               <button key={t} className="nav-btn" onClick={() => setTab(t)} style={{
                 padding: "10px 20px", background: "transparent", border: "none",
                 borderBottom: isActive ? `2px solid ${col}` : "2px solid transparent",
-                color: isActive ? col : "#444", fontWeight: isActive ? 800 : 600,
+                color: isActive ? col : "#71717a", fontWeight: isActive ? 800 : 600,
                 fontSize: 13, cursor: "pointer", letterSpacing: "0.02em",
                 transition: "all 0.15s", fontFamily: "inherit", whiteSpace: "nowrap", flexShrink: 0,
               }}>
@@ -2954,7 +2954,7 @@ export default function App() {
       {/* Content */}
       <div className="content-pad" style={{ padding: "28px 32px", maxWidth: 960, margin: "0 auto" }}>
         {!allReady ? (
-          <div style={{ textAlign: "center", padding: 80, color: "#444" }}>
+          <div style={{ textAlign: "center", padding: 80, color: "#71717a" }}>
             <div style={{ fontSize: 32, marginBottom: 12 }}>⚡</div>
             <div style={{ fontSize: 14 }}>Connexion à Firebase…</div>
           </div>
