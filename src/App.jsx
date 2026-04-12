@@ -3751,14 +3751,13 @@ function KartingCharts({ kartingData, visibleSports, collapsed, SectionHeader })
 
 function Dashboard({ runData, hyroxData, kartingData, bodyData, upcomingEvents, setUpcomingEvents }) {
   const [visibleSports, setVisibleSports] = useState(["Course à pied", "Hyrox", "Karting"]);
-  const toggleSport = (sport) => setVisibleSports(v => v.includes(sport) ? v.filter(s => s !== sport) : [...v, sport]);
   const [collapsed, setCollapsed] = useState({});
+
+  const toggleSport = (sport) => setVisibleSports(v => v.includes(sport) ? v.filter(s => s !== sport) : [...v, sport]);
   const toggleSection = (key) => setCollapsed(v => ({ ...v, [key]: !v[key] }));
+
   const SectionHeader = ({ sectionKey, label }) => (
-    <div
-      onClick={() => toggleSection(sectionKey)}
-      style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: collapsed[sectionKey] ? 0 : 12, cursor: "pointer", userSelect: "none" }}
-    >
+    <div onClick={() => toggleSection(sectionKey)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: collapsed[sectionKey] ? 0 : 12, cursor: "pointer", userSelect: "none" }}>
       <div style={{ color: "#fff", fontWeight: 800, fontSize: 15 }}>{label}</div>
       <span style={{ color: "#52525b", fontSize: 13 }}>{collapsed[sectionKey] ? "▼" : "▲"}</span>
     </div>
@@ -3767,242 +3766,165 @@ function Dashboard({ runData, hyroxData, kartingData, bodyData, upcomingEvents, 
   const MS_PER_DAY = 1000 * 60 * 60 * 24;
   const today = new Date().toISOString().slice(0, 10);
   const oneYearAgo = new Date(Date.now() - 365 * MS_PER_DAY).toISOString().slice(0, 10);
-
-  // ── Courses à venir ──
-  const upcoming = (upcomingEvents || [])
-    .filter(e => e.date >= today)
-    .sort((a, b) => a.date.localeCompare(b.date));
-
   const daysUntil = (dateStr) => Math.ceil((new Date(dateStr) - new Date()) / MS_PER_DAY);
 
-  // ── Records de l'année (fil d'actualité) ──
-  const yearRecords = [];
+  const upcoming = (upcomingEvents || []).filter(e => e.date >= today).sort((a, b) => a.date.localeCompare(b.date));
 
-  // Run PRs par athlète+distance dans l'année
+  // Records de l'année
+  const yearRecords = [];
   ATHLETES.forEach(athlete => {
     RUNNING_PR_DISTANCES.forEach(dist => {
-      const runs = runData.filter(r => r.athlete === athlete && r.distance === dist && r.secs && r.date >= oneYearAgo)
-        .sort((a, b) => a.date.localeCompare(b.date));
-      const allRuns = runData.filter(r => r.athlete === athlete && r.distance === dist && r.secs)
-        .sort((a, b) => a.date.localeCompare(b.date));
-      runs.forEach(run => {
+      const allRuns = runData.filter(r => r.athlete === athlete && r.distance === dist && r.secs).sort((a, b) => a.date.localeCompare(b.date));
+      allRuns.filter(r => r.date >= oneYearAgo).forEach(run => {
         const before = allRuns.filter(r => r.date < run.date);
         const prevBest = before.length ? Math.min(...before.map(r => r.secs)) : null;
         if (!prevBest || run.secs < prevBest) {
-          yearRecords.push({
-            date: run.date, athlete, sport: "Course à pied",
-            label: dist, value: formatTime(run.secs),
-            delta: prevBest ? run.secs - prevBest : null,
-            color: SPORT_COLORS["Course à pied"].main,
-            icon: "🏃",
-          });
+          yearRecords.push({ date: run.date, athlete, sport: "Course à pied", label: dist, value: formatTime(run.secs), delta: prevBest ? run.secs - prevBest : null, color: SPORT_COLORS["Course à pied"].main, icon: "🏃" });
         }
       });
     });
-  });
-
-  // Hyrox total PRs dans l'année
-  ATHLETES.forEach(athlete => {
-    const races = hyroxData.filter(r => r.athlete === athlete && r.totalSecs)
-      .sort((a, b) => a.date.localeCompare(b.date));
+    const races = hyroxData.filter(r => r.athlete === athlete && r.totalSecs).sort((a, b) => a.date.localeCompare(b.date));
     races.filter(r => r.date >= oneYearAgo).forEach(run => {
       const before = races.filter(r => r.date < run.date);
       const prevBest = before.length ? Math.min(...before.map(r => r.totalSecs)) : null;
       if (!prevBest || run.totalSecs < prevBest) {
-        yearRecords.push({
-          date: run.date, athlete, sport: "Hyrox",
-          label: "Temps total", value: formatTime(run.totalSecs),
-          sub: run.eventName || "",
-          delta: prevBest ? run.totalSecs - prevBest : null,
-          color: SPORT_COLORS["Hyrox"].main, icon: "⚡",
-        });
+        yearRecords.push({ date: run.date, athlete, sport: "Hyrox", label: "Temps total", value: formatTime(run.totalSecs), sub: run.eventName || "", delta: prevBest ? run.totalSecs - prevBest : null, color: SPORT_COLORS["Hyrox"].main, icon: "⚡" });
       }
     });
-    // Hyrox station PRs
     HYROX_STATIONS.forEach(station => {
-      const stRaces = races.filter(r => r.stationSecs?.[station]);
+      const stRaces = races.filter(r => r.stationSecs && r.stationSecs[station]);
       stRaces.filter(r => r.date >= oneYearAgo).forEach(run => {
         const before = stRaces.filter(r => r.date < run.date);
         const prevBest = before.length ? Math.min(...before.map(r => r.stationSecs[station])) : null;
         if (!prevBest || run.stationSecs[station] < prevBest) {
-          yearRecords.push({
-            date: run.date, athlete, sport: "Hyrox",
-            label: station, value: formatTime(run.stationSecs[station]),
-            delta: prevBest ? run.stationSecs[station] - prevBest : null,
-            color: SPORT_COLORS["Hyrox"].main, icon: "⚡",
-          });
+          yearRecords.push({ date: run.date, athlete, sport: "Hyrox", label: station, value: formatTime(run.stationSecs[station]), delta: prevBest ? run.stationSecs[station] - prevBest : null, color: SPORT_COLORS["Hyrox"].main, icon: "⚡" });
         }
       });
     });
   });
-
   yearRecords.sort((a, b) => b.date.localeCompare(a.date));
 
-  // ── Graphiques de progression ──
-  const toDatasets = (distOrStation, getEntries, getVal) =>
-    ATHLETES.map(a => ({
-      label: a,
-      color: DASH_ATHLETE_COLORS[a],
-      points: getEntries(a).map(r => ({ x: new Date(r.date).getTime(), y: getVal(r) })),
-    }));
+  const makeDatasets = (getPoints) => ATHLETES.map(a => ({ label: a, color: DASH_ATHLETE_COLORS[a], points: getPoints(a) }));
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
 
-      {/* ── Filtres sports ── */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {["Course à pied", "Hyrox", "Karting"].map(sport => {
           const col = SPORT_COLORS[sport];
           const on = visibleSports.includes(sport);
           return (
-            <button key={sport} onClick={() => toggleSport(sport)} style={{
-              padding: "6px 16px", borderRadius: "999px", cursor: "pointer", fontFamily: "inherit",
-              border: `1.5px solid ${on ? col.main : "#303036"}`,
-              background: on ? col.main + "22" : "transparent",
-              color: on ? col.main : "#555", fontWeight: 700, fontSize: 12,
-            }}>
+            <button key={sport} onClick={() => toggleSport(sport)} style={{ padding: "6px 16px", borderRadius: "999px", cursor: "pointer", fontFamily: "inherit", border: "1.5px solid " + (on ? col.main : "#303036"), background: on ? col.main + "22" : "transparent", color: on ? col.main : "#555", fontWeight: 700, fontSize: 12 }}>
               {SPORT_ICONS[sport]} {sport}
             </button>
           );
         })}
       </div>
 
-      {/* ── Courses à venir ── */}
       {upcoming.length > 0 && (
         <div>
           <SectionHeader sectionKey="upcoming" label="📅 À venir" />
-          {!collapsed["upcoming"] && (<div>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            {upcoming.filter(e => visibleSports.includes(e.sport) || !e.sport).map(e => {
-              const col = SPORT_COLORS[e.sport] || SPORT_COLORS["Hyrox"];
-              const days = daysUntil(e.date);
-              return (
-                <div key={e.id} style={{ background: "#1f1f23", border: `1px solid ${col.border}`, borderLeft: `3px solid ${col.main}`, borderRadius: 12, padding: "12px 16px", minWidth: 180, flex: 1 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <div>
-                      <div style={{ color: "#fff", fontWeight: 700, fontSize: 14 }}>{e.name}</div>
-                      <div style={{ color: "#71717a", fontSize: 12, marginTop: 2 }}>{formatDate(e.date)}</div>
-                      <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
-                        {(e.athletes || []).map(a => <Badge key={a} color={col.main}>{a}</Badge>)}
+          {!collapsed["upcoming"] && (
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              {upcoming.filter(e => visibleSports.includes(e.sport) || !e.sport).map(e => {
+                const col = SPORT_COLORS[e.sport] || SPORT_COLORS["Hyrox"];
+                const days = daysUntil(e.date);
+                return (
+                  <div key={e.id} style={{ background: "#1f1f23", border: "1px solid " + col.border, borderLeft: "3px solid " + col.main, borderRadius: 12, padding: "12px 16px", minWidth: 180, flex: 1 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <div>
+                        <div style={{ color: "#fff", fontWeight: 700, fontSize: 14 }}>{e.name}</div>
+                        <div style={{ color: "#71717a", fontSize: 12, marginTop: 2 }}>{formatDate(e.date)}</div>
+                        <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
+                          {(e.athletes || []).map(a => <Badge key={a} color={col.main}>{a}</Badge>)}
+                        </div>
+                      </div>
+                      <div style={{ textAlign: "right", marginLeft: 12 }}>
+                        <div style={{ color: col.main, fontWeight: 900, fontSize: 24 }}>{days}</div>
+                        <div style={{ color: "#71717a", fontSize: 10 }}>jours</div>
                       </div>
                     </div>
-                    <div style={{ textAlign: "right", marginLeft: 12 }}>
-                      <div style={{ color: col.main, fontWeight: 900, fontSize: 24 }}>{days}</div>
-                      <div style={{ color: "#71717a", fontSize: 10 }}>jours</div>
-                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>\n</div>)}
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
-      {/* ── Fil d'actualité records de l'année ── */}
       {yearRecords.filter(r => visibleSports.includes(r.sport)).length > 0 && (
         <div>
           <SectionHeader sectionKey="records" label="🏆 Records de l'année" />
-          {!collapsed["records"] && (<div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 0, borderLeft: "2px solid #303036", marginLeft: 8 }}>
-            {yearRecords.filter(r => visibleSports.includes(r.sport)).map((rec, i) => (
-              <div key={i} style={{ display: "flex", gap: 16, paddingLeft: 20, paddingBottom: 16, position: "relative" }}>
-                {/* Dot sur la ligne */}
-                <div style={{ position: "absolute", left: -6, top: 4, width: 10, height: 10, borderRadius: "50%", background: rec.color, border: "2px solid #18181b" }} />
-                <div style={{ color: "#52525b", fontSize: 11, whiteSpace: "nowrap", minWidth: 80, paddingTop: 2 }}>{formatDate(rec.date)}</div>
-                <div style={{ background: "#1f1f23", border: `1px solid #303036`, borderLeft: `3px solid ${rec.color}`, borderRadius: 10, padding: "8px 14px", flex: 1 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div>
-                      <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 2 }}>
+          {!collapsed["records"] && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 0, borderLeft: "2px solid #303036", marginLeft: 8 }}>
+              {yearRecords.filter(r => visibleSports.includes(r.sport)).map((rec, i) => (
+                <div key={i} style={{ display: "flex", gap: 16, paddingLeft: 20, paddingBottom: 16, position: "relative" }}>
+                  <div style={{ position: "absolute", left: -6, top: 4, width: 10, height: 10, borderRadius: "50%", background: rec.color, border: "2px solid #18181b" }} />
+                  <div style={{ color: "#52525b", fontSize: 11, whiteSpace: "nowrap", minWidth: 80, paddingTop: 2 }}>{formatDate(rec.date)}</div>
+                  <div style={{ background: "#1f1f23", border: "1px solid #303036", borderLeft: "3px solid " + rec.color, borderRadius: 10, padding: "8px 14px", flex: 1 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                         <span style={{ fontSize: 12 }}>{rec.icon}</span>
                         <Badge color={rec.color}>{rec.athlete}</Badge>
                         <span style={{ color: "#888", fontSize: 12 }}>{rec.label}</span>
                         {rec.sub && <span style={{ color: "#52525b", fontSize: 11 }}>· {rec.sub}</span>}
                       </div>
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                      <div style={{ color: rec.color, fontWeight: 900, fontSize: 16 }}>{rec.value}</div>
-                      {rec.delta !== null && (
-                        <div style={{ color: "#4ade80", fontSize: 11, fontWeight: 700 }}>
-                          ▼ {formatTime(Math.abs(rec.delta))}
-                        </div>
-                      )}
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ color: rec.color, fontWeight: 900, fontSize: 16 }}>{rec.value}</div>
+                        {rec.delta !== null && <div style={{ color: "#4ade80", fontSize: 11, fontWeight: 700 }}>▼ {formatTime(Math.abs(rec.delta))}</div>}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>)}
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      {/* ── Graphiques de progression ── */}
       {visibleSports.includes("Course à pied") && (
         <div>
           <SectionHeader sectionKey="runCharts" label="📈 Progression Course à pied" />
-          {!collapsed["runCharts"] && (<div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-            {RUNNING_PR_DISTANCES.map(dist => {
-              const hasData = ATHLETES.some(a => runData.filter(r => r.athlete === a && r.distance === dist && r.secs).length > 1);
-              if (!hasData) return null;
-              const datasets = ATHLETES.map(a => ({
-                label: a, color: DASH_ATHLETE_COLORS[a],
-                points: runData.filter(r => r.athlete === a && r.distance === dist && r.secs)
-                  .sort((a, b) => a.date.localeCompare(b.date))
-                  .map(r => ({ x: new Date(r.date).getTime(), y: r.secs })),
-              }));
-              return <LineChart key={dist} title={dist} datasets={datasets} yFormat={dashSecsFmt} sport="Course à pied" />;
-            })}
-          </div>)}
+          {!collapsed["runCharts"] && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+              {RUNNING_PR_DISTANCES.map(dist => {
+                const datasets = makeDatasets(a => runData.filter(r => r.athlete === a && r.distance === dist && r.secs).sort((a, b) => a.date.localeCompare(b.date)).map(r => ({ x: new Date(r.date).getTime(), y: r.secs })));
+                if (!datasets.some(d => d.points.length > 1)) return null;
+                return <LineChart key={dist} title={dist} datasets={datasets} yFormat={dashSecsFmt} sport="Course à pied" />;
+              })}
+            </div>
+          )}
         </div>
       )}
 
       {visibleSports.includes("Hyrox") && (
         <div>
           <SectionHeader sectionKey="hyroxCharts" label="📈 Progression Hyrox" />
-          {!collapsed["hyroxCharts"] && (<div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-            {/* Temps total */}
-            {(() => {
-              const hasData = ATHLETES.some(a => hyroxData.filter(r => r.athlete === a && r.totalSecs).length > 1);
-              if (!hasData) return null;
-              const datasets = ATHLETES.map(a => ({
-                label: a, color: DASH_ATHLETE_COLORS[a],
-                points: hyroxData.filter(r => r.athlete === a && r.totalSecs)
-                  .sort((a, b) => a.date.localeCompare(b.date))
-                  .map(r => ({ x: new Date(r.date).getTime(), y: r.totalSecs })),
-              }));
-              return <LineChart key="total" title="Temps total" datasets={datasets} yFormat={dashSecsFmt} sport="Hyrox" />;
-            })()}
-            {/* Stations */}
-            {HYROX_STATIONS.map(station => {
-              const hasData = ATHLETES.some(a => hyroxData.filter(r => r.athlete === a && r.stationSecs?.[station]).length > 1);
-              if (!hasData) return null;
-              const datasets = ATHLETES.map(a => ({
-                label: a, color: DASH_ATHLETE_COLORS[a],
-                points: hyroxData.filter(r => r.athlete === a && r.stationSecs?.[station])
-                  .sort((a, b) => a.date.localeCompare(b.date))
-                  .map(r => ({ x: new Date(r.date).getTime(), y: r.stationSecs[station] })),
-              }));
-              return <LineChart key={station} title={station} datasets={datasets} yFormat={dashSecsFmt} sport="Hyrox" />;
-            })}
-          </div>)}
+          {!collapsed["hyroxCharts"] && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+              {[null, ...HYROX_STATIONS].map(station => {
+                const key = station || "total";
+                const title = station || "Temps total";
+                const datasets = makeDatasets(a => hyroxData.filter(r => r.athlete === a && (station ? r.stationSecs && r.stationSecs[station] : r.totalSecs)).sort((a, b) => a.date.localeCompare(b.date)).map(r => ({ x: new Date(r.date).getTime(), y: station ? r.stationSecs[station] : r.totalSecs })));
+                if (!datasets.some(d => d.points.length > 1)) return null;
+                return <LineChart key={key} title={title} datasets={datasets} yFormat={dashSecsFmt} sport="Hyrox" />;
+              })}
+            </div>
+          )}
         </div>
       )}
 
       <KartingCharts kartingData={kartingData} visibleSports={visibleSports} collapsed={collapsed} SectionHeader={SectionHeader} />
 
-      {/* ── Activité récente ── */}
       <div>
         <SectionHeader sectionKey="recent" label="Activité récente" />
-        <RecentActivity
-          runData={runData}
-          hyroxData={hyroxData}
-          kartingData={kartingData}
-          visibleSports={visibleSports}
-          collapsed={collapsed}
-        />
+        <RecentActivity runData={runData} hyroxData={hyroxData} kartingData={kartingData} visibleSports={visibleSports} collapsed={collapsed} />
       </div>
+
     </div>
   );
 }
+
 // ── FIREBASE ──────────────────────────────────────────────────────────────────
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyDl3eJd7g-CHsqR2omtKueVcv8bxOHswao",
