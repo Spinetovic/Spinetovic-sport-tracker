@@ -897,7 +897,7 @@ function RunningRecords({ data }) {
 }
 
 // ── RUNNING TAB ───────────────────────────────────────────────────────────────
-function RunningTab({ data, setData, raceNames, setRaceNames }) {
+function RunningTab({ data, setData, raceNames, setRaceNames, upcomingEvents, setUpcomingEvents }) {
   const [subTab, setSubTab] = useState("Historique");
   const [form, setForm] = useState(defaultRunForm);
   const [filter, setFilter] = useState("Tous");
@@ -953,6 +953,7 @@ function RunningTab({ data, setData, raceNames, setRaceNames }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <UpcomingEventsBanner sport="Course à pied" upcomingEvents={upcomingEvents} setUpcomingEvents={setUpcomingEvents} />
       {/* Sub-tabs */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", gap: 4, background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 10, padding: 4 }}>
@@ -2006,7 +2007,7 @@ function HyroxRecords({ data, trainingData, templates }) {
 }
 
 // ── HYROX TAB ─────────────────────────────────────────────────────────────────
-function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrainingData, templates, setTemplates }) {
+function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrainingData, templates, setTemplates, upcomingEvents, setUpcomingEvents }) {
   const [subTab, setSubTab] = useState("Historique");
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(defaultHyroxForm);
@@ -2093,6 +2094,7 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {/* Sub-tabs */}
+      <UpcomingEventsBanner sport="Hyrox" upcomingEvents={upcomingEvents} setUpcomingEvents={setUpcomingEvents} />
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <div style={{ display: "flex", gap: 4, background: "#1f1f23", border: "1px solid #303036", borderRadius: 10, padding: 4, overflowX: "auto", flex: 1, minWidth: 0 }}>
           {["Historique", "Records", "Comparaison", "Suivi", "Entraînements"].map(t => (
@@ -2446,7 +2448,7 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
 const KARTING_SESSIONS = ["Qualifications", "Course 1", "Course 2", "Course 3", "Course 4"];
 const defaultKartForm = { date: "", circuit: "RKO Angerville", format: "Sprint", session: "", athlete: "Tom", group: "", rank: "", total: "", bestLap: "", notes: "" };
 
-function KartingTab({ data, setData }) {
+function KartingTab({ data, setData, upcomingEvents, setUpcomingEvents }) {
   const [subTab, setSubTab] = useState("Historique");
   const [form, setForm] = useState(defaultKartForm);
   const [editingId, setEditingId] = useState(null);
@@ -2495,6 +2497,7 @@ function KartingTab({ data, setData }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <UpcomingEventsBanner sport="Karting" upcomingEvents={upcomingEvents} setUpcomingEvents={setUpcomingEvents} />
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", gap: 4, background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 10, padding: 4 }}>
           {["Historique", "Circuit"].map(t => (
@@ -3483,6 +3486,87 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates, partners, se
 }
 
 // ── PR NOTIFICATION ───────────────────────────────────────────────────────────
+// ── UPCOMING EVENTS ───────────────────────────────────────────────────────────
+function UpcomingEventsBanner({ sport, upcomingEvents, setUpcomingEvents }) {
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ name: "", date: "", athletes: [], sport });
+  const col = SPORT_COLORS[sport];
+
+  const upcoming = (upcomingEvents || [])
+    .filter(e => e.sport === sport && e.date >= new Date().toISOString().slice(0, 10))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const addEvent = () => {
+    if (!form.name || !form.date) return;
+    setUpcomingEvents(d => [...d, { ...form, id: Date.now(), athletes: form.athletes.length ? form.athletes : ATHLETES }]);
+    setForm({ name: "", date: "", athletes: [], sport });
+    setShowForm(false);
+  };
+
+  const daysUntil = (dateStr) => {
+    const diff = new Date(dateStr) - new Date();
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  };
+
+  if (upcoming.length === 0 && !showForm) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", background: "#27272a", borderRadius: 10, marginBottom: 16 }}>
+        <span style={{ color: "#52525b", fontSize: 13 }}>Aucune course à venir</span>
+        <button onClick={() => setShowForm(true)} style={{ padding: "4px 12px", borderRadius: 6, border: `1px solid ${col.main}44`, background: "transparent", color: col.main, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>+ Ajouter</button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ marginBottom: 16 }}>
+      {upcoming.length > 0 && (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: showForm ? 10 : 0 }}>
+          {upcoming.map(e => {
+            const days = daysUntil(e.date);
+            return (
+              <div key={e.id} style={{ background: col.light, border: `1px solid ${col.border}`, borderRadius: 10, padding: "8px 14px", display: "flex", alignItems: "center", gap: 10 }}>
+                <div>
+                  <div style={{ color: "#fff", fontWeight: 700, fontSize: 13 }}>{e.name}</div>
+                  <div style={{ color: "#71717a", fontSize: 11 }}>{formatDate(e.date)} · {e.athletes?.join(", ")}</div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ color: col.main, fontWeight: 900, fontSize: 16 }}>{days}j</div>
+                  <button onClick={() => setUpcomingEvents(d => d.filter(x => x.id !== e.id))} style={{ background: "none", border: "none", color: "#52525b", fontSize: 14, cursor: "pointer", padding: 0 }}>×</button>
+                </div>
+              </div>
+            );
+          })}
+          <button onClick={() => setShowForm(v => !v)} style={{ padding: "8px 14px", borderRadius: 10, border: `1px solid ${col.main}44`, background: "transparent", color: col.main, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>+</button>
+        </div>
+      )}
+      {showForm && (
+        <div style={{ background: "#27272a", borderRadius: 10, padding: "12px 16px", display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 2, minWidth: 140 }}>
+            <label style={{ color: "#71717a", fontSize: 10, fontWeight: 700, textTransform: "uppercase" }}>Nom</label>
+            <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="ex: Paris Hyrox" style={{ background: "#1f1f23", border: "1px solid #3f3f46", borderRadius: 7, padding: "7px 10px", color: "#fff", fontSize: 13, outline: "none", fontFamily: "inherit" }} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 120 }}>
+            <label style={{ color: "#71717a", fontSize: 10, fontWeight: 700, textTransform: "uppercase" }}>Date</label>
+            <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} style={{ background: "#1f1f23", border: "1px solid #3f3f46", borderRadius: 7, padding: "7px 10px", color: "#fff", fontSize: 13, outline: "none", fontFamily: "inherit" }} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label style={{ color: "#71717a", fontSize: 10, fontWeight: 700, textTransform: "uppercase" }}>Athlètes</label>
+            <div style={{ display: "flex", gap: 6 }}>
+              {ATHLETES.map(a => (
+                <button key={a} onClick={() => setForm(f => ({ ...f, athletes: f.athletes.includes(a) ? f.athletes.filter(x => x !== a) : [...f.athletes, a] }))} style={{ padding: "6px 12px", borderRadius: 7, border: `1.5px solid ${form.athletes.includes(a) ? col.main : "#3f3f46"}`, background: form.athletes.includes(a) ? col.main + "22" : "transparent", color: form.athletes.includes(a) ? col.main : "#888", fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>{a}</button>
+              ))}
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 6 }}>
+            <button onClick={addEvent} style={{ padding: "7px 16px", borderRadius: 7, border: "none", background: col.main, color: "#000", fontWeight: 800, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>Ajouter</button>
+            <button onClick={() => setShowForm(false)} style={{ padding: "7px 12px", borderRadius: 7, border: "1px solid #3f3f46", background: "transparent", color: "#888", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>Annuler</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PRToast({ message, onClose }) {
   useEffect(() => {
     const t = setTimeout(onClose, 4000);
@@ -3508,287 +3592,365 @@ function PRToast({ message, onClose }) {
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
-function Dashboard({ runData, hyroxData, kartingData, bodyData }) {
-  const [expandedAthlete, setExpandedAthlete] = useState(null);
+function Dashboard({ runData, hyroxData, kartingData, bodyData, upcomingEvents, setUpcomingEvents }) {
+  const [visibleSports, setVisibleSports] = useState(["Course à pied", "Hyrox", "Karting"]);
+  const toggleSport = (sport) => setVisibleSports(v => v.includes(sport) ? v.filter(s => s !== sport) : [...v, sport]);
 
-  const recent = [
-    ...runData.map(r => ({ ...r, sport: "Course à pied" })),
-    ...hyroxData.map(r => ({ ...r, sport: "Hyrox" })),
-    ...(kartingData||[]).map(r => ({ ...r, sport: "Karting" })),
-  ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 6);
+  const today = new Date().toISOString().slice(0, 10);
+  const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-  // ── Calculs PRs et deltas ──
-  const getRunHistory = (athlete, dist) => {
-    return runData
-      .filter(r => r.athlete === athlete && r.distance === dist && r.secs)
+  // ── Courses à venir ──
+  const upcoming = (upcomingEvents || [])
+    .filter(e => e.date >= today)
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const daysUntil = (dateStr) => Math.ceil((new Date(dateStr) - new Date()) / (1000 * 60 * 60 * 24));
+
+  // ── Records de l'année (fil d'actualité) ──
+  const yearRecords = [];
+
+  // Run PRs par athlète+distance dans l'année
+  ATHLETES.forEach(athlete => {
+    RUNNING_PR_DISTANCES.forEach(dist => {
+      const runs = runData.filter(r => r.athlete === athlete && r.distance === dist && r.secs && r.date >= oneYearAgo)
+        .sort((a, b) => a.date.localeCompare(b.date));
+      const allRuns = runData.filter(r => r.athlete === athlete && r.distance === dist && r.secs)
+        .sort((a, b) => a.date.localeCompare(b.date));
+      runs.forEach(run => {
+        const before = allRuns.filter(r => r.date < run.date);
+        const prevBest = before.length ? Math.min(...before.map(r => r.secs)) : null;
+        if (!prevBest || run.secs < prevBest) {
+          yearRecords.push({
+            date: run.date, athlete, sport: "Course à pied",
+            label: dist, value: formatTime(run.secs),
+            delta: prevBest ? run.secs - prevBest : null,
+            color: SPORT_COLORS["Course à pied"].main,
+            icon: "🏃",
+          });
+        }
+      });
+    });
+  });
+
+  // Hyrox total PRs dans l'année
+  ATHLETES.forEach(athlete => {
+    const races = hyroxData.filter(r => r.athlete === athlete && r.totalSecs)
       .sort((a, b) => a.date.localeCompare(b.date));
+    races.filter(r => r.date >= oneYearAgo).forEach(run => {
+      const before = races.filter(r => r.date < run.date);
+      const prevBest = before.length ? Math.min(...before.map(r => r.totalSecs)) : null;
+      if (!prevBest || run.totalSecs < prevBest) {
+        yearRecords.push({
+          date: run.date, athlete, sport: "Hyrox",
+          label: "Temps total", value: formatTime(run.totalSecs),
+          sub: run.eventName || "",
+          delta: prevBest ? run.totalSecs - prevBest : null,
+          color: SPORT_COLORS["Hyrox"].main, icon: "⚡",
+        });
+      }
+    });
+    // Hyrox station PRs
+    HYROX_STATIONS.forEach(station => {
+      const stRaces = races.filter(r => r.stationSecs?.[station]);
+      stRaces.filter(r => r.date >= oneYearAgo).forEach(run => {
+        const before = stRaces.filter(r => r.date < run.date);
+        const prevBest = before.length ? Math.min(...before.map(r => r.stationSecs[station])) : null;
+        if (!prevBest || run.stationSecs[station] < prevBest) {
+          yearRecords.push({
+            date: run.date, athlete, sport: "Hyrox",
+            label: station, value: formatTime(run.stationSecs[station]),
+            delta: prevBest ? run.stationSecs[station] - prevBest : null,
+            color: SPORT_COLORS["Hyrox"].main, icon: "⚡",
+          });
+        }
+      });
+    });
+  });
+
+  yearRecords.sort((a, b) => b.date.localeCompare(a.date));
+
+  // ── Graphiques de progression ──
+  const ATHLETE_COLORS = { Tom: "#60a5fa", Camille: "#f472b6" };
+
+  const LineChart = ({ title, datasets, yFormat, sport }) => {
+    if (!datasets.some(d => d.points.length > 1)) return null;
+    const allPoints = datasets.flatMap(d => d.points);
+    if (!allPoints.length) return null;
+    const W = 320, H = 120, PAD = { top: 16, right: 16, bottom: 28, left: 48 };
+    const chartW = W - PAD.left - PAD.right;
+    const chartH = H - PAD.top - PAD.bottom;
+    const allVals = allPoints.map(p => p.y);
+    const minY = Math.min(...allVals);
+    const maxY = Math.max(...allVals);
+    const rangeY = maxY - minY || 1;
+    const allDates = allPoints.map(p => p.x);
+    const minX = Math.min(...allDates);
+    const maxX = Math.max(...allDates);
+    const rangeX = maxX - minX || 1;
+
+    const toSvgX = x => PAD.left + ((x - minX) / rangeX) * chartW;
+    const toSvgY = y => PAD.top + ((maxY - y) / rangeY) * chartH;
+
+    const col = SPORT_COLORS[sport];
+
+    return (
+      <div style={{ background: "#1f1f23", border: "1px solid #303036", borderRadius: 12, padding: "14px 16px", minWidth: 280, flex: 1 }}>
+        <div style={{ color: "#888", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>{title}</div>
+        <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ overflow: "visible" }}>
+          {/* Y axis labels */}
+          {[0, 0.5, 1].map(t => {
+            const val = minY + t * rangeY;
+            const y = toSvgY(val);
+            return (
+              <g key={t}>
+                <line x1={PAD.left} y1={y} x2={W - PAD.right} y2={y} stroke="#27272a" strokeWidth="1" />
+                <text x={PAD.left - 4} y={y + 4} textAnchor="end" fontSize="9" fill="#52525b">{yFormat(Math.round(val))}</text>
+              </g>
+            );
+          })}
+          {/* Lines + dots */}
+          {datasets.map(d => {
+            if (d.points.length < 2) return null;
+            const pts = d.points.map(p => `${toSvgX(p.x)},${toSvgY(p.y)}`).join(" ");
+            return (
+              <g key={d.label}>
+                <polyline points={pts} fill="none" stroke={d.color} strokeWidth="2" strokeLinejoin="round" />
+                {d.points.map((p, i) => (
+                  <circle key={i} cx={toSvgX(p.x)} cy={toSvgY(p.y)} r="3" fill={d.color} />
+                ))}
+              </g>
+            );
+          })}
+        </svg>
+        {/* Legend */}
+        <div style={{ display: "flex", gap: 12, marginTop: 6 }}>
+          {datasets.filter(d => d.points.length).map(d => (
+            <div key={d.label} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <div style={{ width: 10, height: 3, borderRadius: 2, background: d.color }} />
+              <span style={{ color: "#71717a", fontSize: 10 }}>{d.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   };
 
-  const getRunPR = (athlete, dist) => {
-    const runs = getRunHistory(athlete, dist);
-    return runs.length ? runs.reduce((b, r) => r.secs < b.secs ? r : b) : null;
+  const secsFmt = (s) => {
+    const m = Math.floor(s / 60); const sec = s % 60;
+    return `${m}:${String(sec).padStart(2,"0")}`;
   };
 
-  const getRunPRDelta = (athlete, dist) => {
-    // Différence entre l'avant-dernier PR et le PR actuel
-    const runs = getRunHistory(athlete, dist);
-    if (runs.length < 2) return null;
-    const pr = runs.reduce((b, r) => r.secs < b.secs ? r : b);
-    const prevPRs = runs.filter(r => r.id !== pr.id);
-    if (!prevPRs.length) return null;
-    const prevBest = prevPRs.reduce((b, r) => r.secs < b.secs ? r : b);
-    return pr.secs - prevBest.secs; // négatif = amélioration
-  };
-
-  const getHyroxPR = (athlete) => {
-    const races = hyroxData.filter(r => r.athlete === athlete && r.totalSecs);
-    return races.length ? races.reduce((b, r) => r.totalSecs < b.totalSecs ? r : b) : null;
-  };
-
-  const getHyroxPRDelta = (athlete) => {
-    const races = hyroxData.filter(r => r.athlete === athlete && r.totalSecs).sort((a, b) => a.date.localeCompare(b.date));
-    if (races.length < 2) return null;
-    const pr = races.reduce((b, r) => r.totalSecs < b.totalSecs ? r : b);
-    const prev = races.filter(r => r.id !== pr.id).reduce((b, r) => r.totalSecs < b.totalSecs ? r : b);
-    return pr.totalSecs - prev.totalSecs;
-  };
-
-  const getKartingPR = (athlete, session) => {
-    const entries = (kartingData||[]).filter(r => r.athlete === athlete && r.session === session && r.rank && r.total);
-    return entries.length ? entries.reduce((b, r) => parseInt(r.rank) < parseInt(b.rank) ? r : b) : null;
-  };
-
-  const formatDelta = (secs) => {
-    if (secs === null) return null;
-    const abs = Math.abs(secs);
-    const m = Math.floor(abs / 60);
-    const s = abs % 60;
-    const str = m > 0 ? `${m}m${String(s).padStart(2,"0")}s` : `${s}s`;
-    return secs < 0 ? { label: `▼ ${str}`, color: "#4ade80" } : { label: `▲ ${str}`, color: "#f87171" };
-  };
-
-  // Runs avec distances ayant au moins un résultat
-  const distancesWithData = (athlete) => RUNNING_PR_DISTANCES.filter(d => runData.some(r => r.athlete === athlete && r.distance === d && r.secs));
+  const toDatasets = (distOrStation, getEntries, getVal) =>
+    ATHLETES.map(a => ({
+      label: a,
+      color: ATHLETE_COLORS[a],
+      points: getEntries(a).map(r => ({ x: new Date(r.date).getTime(), y: getVal(r) })),
+    }));
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
 
-      {/* ── Cartes athlètes ── */}
-      {ATHLETES.map(a => {
-        const runPRDists = distancesWithData(a);
-        const hyroxPR = getHyroxPR(a);
-        const hyroxDelta = getHyroxPRDelta(a);
-        const totalActivities = runData.filter(r => r.athlete === a).length + hyroxData.filter(r => r.athlete === a).length + (kartingData||[]).filter(r => r.athlete === a).length;
-        const isExpanded = expandedAthlete === a;
+      {/* ── Filtres sports ── */}
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {["Course à pied", "Hyrox", "Karting"].map(sport => {
+          const col = SPORT_COLORS[sport];
+          const on = visibleSports.includes(sport);
+          return (
+            <button key={sport} onClick={() => toggleSport(sport)} style={{
+              padding: "6px 16px", borderRadius: "999px", cursor: "pointer", fontFamily: "inherit",
+              border: `1.5px solid ${on ? col.main : "#303036"}`,
+              background: on ? col.main + "22" : "transparent",
+              color: on ? col.main : "#555", fontWeight: 700, fontSize: 12,
+            }}>
+              {SPORT_ICONS[sport]} {sport}
+            </button>
+          );
+        })}
+      </div>
 
-        return (
-          <div key={a} style={{ background: "#1f1f23", border: "1px solid #303036", borderRadius: 16, overflow: "hidden" }}>
-
-            {/* Header athlète */}
-            <div
-              onClick={() => setExpandedAthlete(isExpanded ? null : a)}
-              style={{ padding: "18px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                <div style={{ color: "#fff", fontWeight: 900, fontSize: 22 }}>{a}</div>
-                <div style={{ color: "#52525b", fontSize: 12 }}>{totalActivities} activité{totalActivities > 1 ? "s" : ""}</div>
-              </div>
-              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <StatCard label="Run" value={runData.filter(r => r.athlete === a).length} color={SPORT_COLORS["Course à pied"].main} />
-                  <StatCard label="Hyrox" value={hyroxData.filter(r => r.athlete === a).length} color={SPORT_COLORS["Hyrox"].main} />
-                  <StatCard label="Kart" value={(kartingData||[]).filter(r => r.athlete === a).length} color={SPORT_COLORS["Karting"].main} />
-                </div>
-                <span style={{ color: "#52525b", fontSize: 16 }}>{isExpanded ? "▲" : "▼"}</span>
-              </div>
-            </div>
-
-            {/* Records détaillés — expandable */}
-            {isExpanded && (
-              <div style={{ borderTop: "1px solid #303036", padding: "20px 24px", display: "flex", flexDirection: "column", gap: 20 }}>
-
-                {/* Course à pied */}
-                {runPRDists.length > 0 && (
-                  <div>
-                    <div style={{ color: "#71717a", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
-                      🏃 Course à pied
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      {runPRDists.map(dist => {
-                        const pr = getRunPR(a, dist);
-                        const delta = formatDelta(getRunPRDelta(a, dist));
-                        const history = getRunHistory(a, dist);
-                        return (
-                          <div key={dist} style={{ background: "#27272a", borderRadius: 12, padding: "12px 16px" }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                              <div>
-                                <div style={{ color: "#888", fontSize: 11, marginBottom: 4 }}>{dist}</div>
-                                <div style={{ color: SPORT_COLORS["Course à pied"].main, fontWeight: 900, fontSize: 22 }}>{formatTime(pr.secs)}</div>
-                                <div style={{ color: "#52525b", fontSize: 11, marginTop: 2 }}>{formatDate(pr.date)}{pr.raceName ? ` · ${pr.raceName}` : ""}</div>
-                              </div>
-                              <div style={{ textAlign: "right" }}>
-                                {delta && (
-                                  <div style={{ color: delta.color, fontWeight: 700, fontSize: 13, marginBottom: 4 }}>{delta.label}</div>
-                                )}
-                                {pr.pace && <div style={{ color: "#52525b", fontSize: 11 }}>{pr.pace}/km</div>}
-                                <div style={{ color: "#52525b", fontSize: 11 }}>{history.length} course{history.length > 1 ? "s" : ""}</div>
-                              </div>
-                            </div>
-                            {/* Mini progression bar */}
-                            {history.length > 1 && (() => {
-                              const best = Math.min(...history.map(r => r.secs));
-                              const worst = Math.max(...history.map(r => r.secs));
-                              const range = worst - best || 1;
-                              return (
-                                <div style={{ marginTop: 10, display: "flex", gap: 3, alignItems: "flex-end", height: 24 }}>
-                                  {history.slice(-8).map((r, i) => {
-                                    const h = Math.max(4, ((worst - r.secs) / range) * 20 + 4);
-                                    const isPR = r.secs === best;
-                                    return (
-                                      <div key={r.id} style={{ flex: 1, height: h, borderRadius: 2, background: isPR ? SPORT_COLORS["Course à pied"].main : SPORT_COLORS["Course à pied"].main + "44" }} title={formatTime(r.secs)} />
-                                    );
-                                  })}
-                                </div>
-                              );
-                            })()}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Hyrox */}
-                {hyroxPR && (
-                  <div>
-                    <div style={{ color: "#71717a", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
-                      ⚡ Hyrox
-                    </div>
-                    <div style={{ background: "#27272a", borderRadius: 12, padding: "12px 16px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div>
-                          <div style={{ color: "#888", fontSize: 11, marginBottom: 4 }}>
-                            {hyroxPR.eventName || "Meilleur temps"}{hyroxPR.category && hyroxPR.category !== "Solo" ? ` · ${hyroxPR.category}` : ""}
-                          </div>
-                          <div style={{ color: SPORT_COLORS["Hyrox"].main, fontWeight: 900, fontSize: 22 }}>{formatTime(hyroxPR.totalSecs)}</div>
-                          <div style={{ color: "#52525b", fontSize: 11, marginTop: 2 }}>{formatDate(hyroxPR.date)}</div>
-                        </div>
-                        <div style={{ textAlign: "right" }}>
-                          {hyroxDelta && (() => { const d = formatDelta(hyroxDelta); return d ? <div style={{ color: d.color, fontWeight: 700, fontSize: 13 }}>{d.label}</div> : null; })()}
-                          {hyroxPR.runSecs && <div style={{ color: "#52525b", fontSize: 11, marginTop: 4 }}>Run: {formatTime(hyroxPR.runSecs)}</div>}
-                          {hyroxPR.roxzoneSecs && <div style={{ color: "#52525b", fontSize: 11 }}>Roxzone: {formatTime(hyroxPR.roxzoneSecs)}</div>}
-                        </div>
+      {/* ── Courses à venir ── */}
+      {upcoming.length > 0 && (
+        <div>
+          <div style={{ color: "#fff", fontWeight: 800, fontSize: 15, marginBottom: 12 }}>📅 À venir</div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {upcoming.filter(e => visibleSports.includes(e.sport) || !e.sport).map(e => {
+              const col = SPORT_COLORS[e.sport] || SPORT_COLORS["Hyrox"];
+              const days = daysUntil(e.date);
+              return (
+                <div key={e.id} style={{ background: "#1f1f23", border: `1px solid ${col.border}`, borderLeft: `3px solid ${col.main}`, borderRadius: 12, padding: "12px 16px", minWidth: 180, flex: 1 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div>
+                      <div style={{ color: "#fff", fontWeight: 700, fontSize: 14 }}>{e.name}</div>
+                      <div style={{ color: "#71717a", fontSize: 12, marginTop: 2 }}>{formatDate(e.date)}</div>
+                      <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
+                        {(e.athletes || []).map(a => <Badge key={a} color={col.main}>{a}</Badge>)}
                       </div>
-                      {/* Mini barre progression Hyrox */}
-                      {hyroxData.filter(r => r.athlete === a && r.totalSecs).length > 1 && (() => {
-                        const races = hyroxData.filter(r => r.athlete === a && r.totalSecs).sort((x, y) => x.date.localeCompare(y.date));
-                        const best = Math.min(...races.map(r => r.totalSecs));
-                        const worst = Math.max(...races.map(r => r.totalSecs));
-                        const range = worst - best || 1;
-                        return (
-                          <div style={{ marginTop: 10, display: "flex", gap: 3, alignItems: "flex-end", height: 24 }}>
-                            {races.slice(-8).map(r => {
-                              const h = Math.max(4, ((worst - r.totalSecs) / range) * 20 + 4);
-                              return <div key={r.id} style={{ flex: 1, height: h, borderRadius: 2, background: r.totalSecs === best ? SPORT_COLORS["Hyrox"].main : SPORT_COLORS["Hyrox"].main + "44" }} />;
-                            })}
-                          </div>
-                        );
-                      })()}
+                    </div>
+                    <div style={{ textAlign: "right", marginLeft: 12 }}>
+                      <div style={{ color: col.main, fontWeight: 900, fontSize: 24 }}>{days}</div>
+                      <div style={{ color: "#71717a", fontSize: 10 }}>jours</div>
                     </div>
                   </div>
-                )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
-                {/* Karting */}
-                {(kartingData||[]).some(r => r.athlete === a) && (
-                  <div>
-                    <div style={{ color: "#71717a", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
-                      🏎️ Karting
+      {/* ── Fil d'actualité records de l'année ── */}
+      {yearRecords.filter(r => visibleSports.includes(r.sport)).length > 0 && (
+        <div>
+          <div style={{ color: "#fff", fontWeight: 800, fontSize: 15, marginBottom: 12 }}>🏆 Records de l'année</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 0, borderLeft: "2px solid #303036", marginLeft: 8 }}>
+            {yearRecords.filter(r => visibleSports.includes(r.sport)).map((rec, i) => (
+              <div key={i} style={{ display: "flex", gap: 16, paddingLeft: 20, paddingBottom: 16, position: "relative" }}>
+                {/* Dot sur la ligne */}
+                <div style={{ position: "absolute", left: -6, top: 4, width: 10, height: 10, borderRadius: "50%", background: rec.color, border: "2px solid #18181b" }} />
+                <div style={{ color: "#52525b", fontSize: 11, whiteSpace: "nowrap", minWidth: 80, paddingTop: 2 }}>{formatDate(rec.date)}</div>
+                <div style={{ background: "#1f1f23", border: `1px solid #303036`, borderLeft: `3px solid ${rec.color}`, borderRadius: 10, padding: "8px 14px", flex: 1 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 2 }}>
+                        <span style={{ fontSize: 12 }}>{rec.icon}</span>
+                        <Badge color={rec.color}>{rec.athlete}</Badge>
+                        <span style={{ color: "#888", fontSize: 12 }}>{rec.label}</span>
+                        {rec.sub && <span style={{ color: "#52525b", fontSize: 11 }}>· {rec.sub}</span>}
+                      </div>
                     </div>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      {KARTING_SESSIONS.map(sess => {
-                        const pr = getKartingPR(a, sess);
-                        if (!pr) return null;
-                        const pct = calcPct(pr.rank, pr.total);
-                        return (
-                          <div key={sess} style={{ background: "#27272a", borderRadius: 10, padding: "10px 14px", flex: 1, minWidth: 100 }}>
-                            <div style={{ color: "#52525b", fontSize: 10, marginBottom: 4 }}>{sess}</div>
-                            <div style={{ color: SPORT_COLORS["Karting"].main, fontWeight: 800, fontSize: 18 }}>P{pr.rank}<span style={{ color: "#52525b", fontSize: 12, fontWeight: 400 }}>/{pr.total}</span></div>
-                            {pct && <div style={{ color: SPORT_COLORS["Karting"].main, fontSize: 10, fontWeight: 700 }}>top {pct}%</div>}
-                          </div>
-                        );
-                      })}
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ color: rec.color, fontWeight: 900, fontSize: 16 }}>{rec.value}</div>
+                      {rec.delta !== null && (
+                        <div style={{ color: "#4ade80", fontSize: 11, fontWeight: 700 }}>
+                          ▼ {formatTime(Math.abs(rec.delta))}
+                        </div>
+                      )}
                     </div>
                   </div>
-                )}
-
-                {!runPRDists.length && !hyroxPR && !(kartingData||[]).some(r => r.athlete === a) && (
-                  <div style={{ color: "#52525b", fontSize: 13, textAlign: "center", padding: "8px 0" }}>Aucun record pour l'instant.</div>
-                )}
+                </div>
               </div>
-            )}
+            ))}
+          </div>
+        </div>
+      )}
 
-            {/* Preview PRs (collapsed) */}
-            {!isExpanded && (
-              <div style={{ padding: "0 24px 18px", display: "flex", gap: 16, flexWrap: "wrap" }}>
-                {runPRDists.slice(0, 3).map(dist => {
-                  const pr = getRunPR(a, dist);
-                  const delta = formatDelta(getRunPRDelta(a, dist));
-                  return (
-                    <div key={dist} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ color: "#52525b", fontSize: 12 }}>🏃 {dist}</span>
-                      <span style={{ color: SPORT_COLORS["Course à pied"].main, fontWeight: 700, fontSize: 13 }}>{formatTime(pr.secs)}</span>
-                      {delta && <span style={{ color: delta.color, fontSize: 11, fontWeight: 700 }}>{delta.label}</span>}
-                    </div>
-                  );
-                })}
-                {hyroxPR && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ color: "#52525b", fontSize: 12 }}>⚡ Hyrox</span>
-                    <span style={{ color: SPORT_COLORS["Hyrox"].main, fontWeight: 700, fontSize: 13 }}>{formatTime(hyroxPR.totalSecs)}</span>
-                    {hyroxDelta && (() => { const d = formatDelta(hyroxDelta); return d ? <span style={{ color: d.color, fontSize: 11, fontWeight: 700 }}>{d.label}</span> : null; })()}
-                  </div>
-                )}
-                {!runPRDists.length && !hyroxPR && <span style={{ color: "#52525b", fontSize: 12 }}>Clique pour voir les détails</span>}
-              </div>
-            )}
+      {/* ── Graphiques de progression ── */}
+      {visibleSports.includes("Course à pied") && (
+        <div>
+          <div style={{ color: "#fff", fontWeight: 800, fontSize: 15, marginBottom: 12 }}>📈 Progression Course à pied</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+            {RUNNING_PR_DISTANCES.map(dist => {
+              const hasData = ATHLETES.some(a => runData.filter(r => r.athlete === a && r.distance === dist && r.secs).length > 1);
+              if (!hasData) return null;
+              const datasets = ATHLETES.map(a => ({
+                label: a, color: ATHLETE_COLORS[a],
+                points: runData.filter(r => r.athlete === a && r.distance === dist && r.secs)
+                  .sort((a, b) => a.date.localeCompare(b.date))
+                  .map(r => ({ x: new Date(r.date).getTime(), y: r.secs })),
+              }));
+              return <LineChart key={dist} title={dist} datasets={datasets} yFormat={secsFmt} sport="Course à pied" />;
+            })}
+          </div>
+        </div>
+      )}
+
+      {visibleSports.includes("Hyrox") && (
+        <div>
+          <div style={{ color: "#fff", fontWeight: 800, fontSize: 15, marginBottom: 12 }}>📈 Progression Hyrox</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+            {/* Temps total */}
+            {(() => {
+              const hasData = ATHLETES.some(a => hyroxData.filter(r => r.athlete === a && r.totalSecs).length > 1);
+              if (!hasData) return null;
+              const datasets = ATHLETES.map(a => ({
+                label: a, color: ATHLETE_COLORS[a],
+                points: hyroxData.filter(r => r.athlete === a && r.totalSecs)
+                  .sort((a, b) => a.date.localeCompare(b.date))
+                  .map(r => ({ x: new Date(r.date).getTime(), y: r.totalSecs })),
+              }));
+              return <LineChart key="total" title="Temps total" datasets={datasets} yFormat={secsFmt} sport="Hyrox" />;
+            })()}
+            {/* Stations */}
+            {HYROX_STATIONS.map(station => {
+              const hasData = ATHLETES.some(a => hyroxData.filter(r => r.athlete === a && r.stationSecs?.[station]).length > 1);
+              if (!hasData) return null;
+              const datasets = ATHLETES.map(a => ({
+                label: a, color: ATHLETE_COLORS[a],
+                points: hyroxData.filter(r => r.athlete === a && r.stationSecs?.[station])
+                  .sort((a, b) => a.date.localeCompare(b.date))
+                  .map(r => ({ x: new Date(r.date).getTime(), y: r.stationSecs[station] })),
+              }));
+              return <LineChart key={station} title={station} datasets={datasets} yFormat={secsFmt} sport="Hyrox" />;
+            })}
+          </div>
+        </div>
+      )}
+
+      {visibleSports.includes("Karting") && (() => {
+        const circuits = [...new Set((kartingData||[]).map(r => r.circuit).filter(Boolean))];
+        const hasData = circuits.some(c => ATHLETES.some(a => (kartingData||[]).filter(r => r.athlete === a && r.circuit === c && r.bestLap).length > 1));
+        if (!hasData) return null;
+        return (
+          <div>
+            <div style={{ color: "#fff", fontWeight: 800, fontSize: 15, marginBottom: 12 }}>📈 Progression Karting</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+              {circuits.map(circuit => {
+                const datasets = ATHLETES.map(a => ({
+                  label: a, color: ATHLETE_COLORS[a],
+                  points: (kartingData||[])
+                    .filter(r => r.athlete === a && r.circuit === circuit && r.bestLap)
+                    .sort((a, b) => a.date.localeCompare(b.date))
+                    .map(r => {
+                      const [ms] = r.bestLap.split(".");
+                      const [mm, ss] = ms.split(":");
+                      const secs = parseInt(mm) * 60 + parseInt(ss);
+                      return { x: new Date(r.date).getTime(), y: secs };
+                    }),
+                }));
+                const hasEnough = datasets.some(d => d.points.length > 1);
+                if (!hasEnough) return null;
+                return <LineChart key={circuit} title={circuit} datasets={datasets} yFormat={s => `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`} sport="Karting" />;
+              })}
+            </div>
           </div>
         );
-      })}
+      })()}
 
       {/* ── Activité récente ── */}
       <div>
         <div style={{ color: "#fff", fontWeight: 800, fontSize: 15, marginBottom: 12 }}>Activité récente</div>
-        {recent.length === 0 ? (
-          <div style={{ color: "#52525b", textAlign: "center", padding: 40 }}>Aucune activité pour l'instant. Commencez à enregistrer !</div>
-        ) : recent.map(r => {
-          const col = SPORT_COLORS[r.sport];
-          return (
-            <div key={r.id} style={{
-              display: "flex", justifyContent: "space-between", alignItems: "center",
-              padding: "12px 18px", background: "#1f1f23", border: "1px solid #303036",
-              borderLeft: `3px solid ${col.main}`,
-              borderRadius: 12, marginBottom: 8,
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <span style={{ fontSize: 18 }}>{SPORT_ICONS[r.sport]}</span>
-                <div>
-                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <Badge color={col.main}>{r.athlete}</Badge>
-                    <span style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>{r.sport}</span>
-                    {r.raceName && <span style={{ color: "#71717a", fontSize: 12 }}>· {r.raceName}</span>}
-                    {r.eventName && <span style={{ color: "#71717a", fontSize: 12 }}>· {r.eventName}</span>}
+        {(() => {
+          const recent = [
+            ...runData.filter(r => visibleSports.includes("Course à pied")).map(r => ({ ...r, sport: "Course à pied" })),
+            ...hyroxData.filter(r => visibleSports.includes("Hyrox")).map(r => ({ ...r, sport: "Hyrox" })),
+            ...(kartingData||[]).filter(r => visibleSports.includes("Karting")).map(r => ({ ...r, sport: "Karting" })),
+          ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 6);
+          if (!recent.length) return <div style={{ color: "#52525b", textAlign: "center", padding: 32 }}>Aucune activité pour l'instant.</div>;
+          return recent.map(r => {
+            const col = SPORT_COLORS[r.sport];
+            return (
+              <div key={r.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 18px", background: "#1f1f23", border: "1px solid #303036", borderLeft: `3px solid ${col.main}`, borderRadius: 12, marginBottom: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span style={{ fontSize: 18 }}>{SPORT_ICONS[r.sport]}</span>
+                  <div>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <Badge color={col.main}>{r.athlete}</Badge>
+                      <span style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>{r.sport}</span>
+                      {r.raceName && <span style={{ color: "#71717a", fontSize: 12 }}>· {r.raceName}</span>}
+                      {r.eventName && <span style={{ color: "#71717a", fontSize: 12 }}>· {r.eventName}</span>}
+                    </div>
+                    <div style={{ color: "#71717a", fontSize: 11, marginTop: 2 }}>{formatDate(r.date)}</div>
                   </div>
-                  <div style={{ color: "#71717a", fontSize: 11, marginTop: 2 }}>{formatDate(r.date)}</div>
+                </div>
+                <div style={{ color: col.main, fontWeight: 700, fontSize: 15 }}>
+                  {r.sport === "Course à pied" && r.secs ? formatTime(r.secs) : ""}
+                  {r.sport === "Hyrox" && r.totalSecs ? formatTime(r.totalSecs) : ""}
+                  {r.sport === "Karting" && r.rank ? `P${r.rank}${r.total ? `/${r.total}` : ""} · ${r.session}` : ""}
                 </div>
               </div>
-              <div style={{ color: col.main, fontWeight: 700, fontSize: 15 }}>
-                {r.sport === "Course à pied" && r.secs ? formatTime(r.secs) : ""}
-                {r.sport === "Hyrox" && r.totalSecs ? formatTime(r.totalSecs) : ""}
-                {r.sport === "Karting" && r.rank ? `P${r.rank}${r.total ? `/${r.total}` : ""} · ${r.session}` : ""}
-              </div>
-            </div>
-          );
-        })}
+            );
+          });
+        })()}
       </div>
     </div>
   );
@@ -3909,8 +4071,9 @@ export default function App() {
   const [hyroxTrainingData, setHyroxTrainingDataRaw, hyroxTrainingReady] = useFirebase("hyroxTraining");
   const [raceNames, setRaceNamesRaw] = useFirebaseValue("raceNames", DEFAULT_RACE_NAMES);
   const [hyroxPartners, setHyroxPartners] = useFirebaseValue("hyroxPartners", []);
+  const [upcomingEvents, setUpcomingEvents, upcomingReady] = useFirebase("upcomingEvents");
 
-  const allReady = runReady && hyroxReady && kartingReady && bodyReady && hyroxTrainingReady;
+  const allReady = runReady && hyroxReady && kartingReady && bodyReady && hyroxTrainingReady && upcomingReady;
   const tabs = ["Dashboard", "Course à pied", "Hyrox", "Karting", "Poids & Corps"];
 
   const setRunData = (updater) => {
@@ -4021,10 +4184,10 @@ export default function App() {
           </div>
         ) : (
           <>
-            {tab === "Dashboard" && <Dashboard runData={runData} hyroxData={hyroxData} kartingData={kartingData} bodyData={bodyData} />}
-            {tab === "Course à pied" && <RunningTab data={runData} setData={setRunData} raceNames={raceNames} setRaceNames={setRaceNamesRaw} />}
-            {tab === "Hyrox" && <HyroxTab data={hyroxData} setData={setHyroxData} partners={hyroxPartners} setPartners={setHyroxPartners} trainingData={hyroxTrainingData} setTrainingData={setHyroxTrainingData} templates={hyroxTemplates} setTemplates={setHyroxTemplatesRaw2} />}
-            {tab === "Karting" && <KartingTab data={kartingData} setData={setKartingData} />}
+            {tab === "Dashboard" && <Dashboard runData={runData} hyroxData={hyroxData} kartingData={kartingData} bodyData={bodyData} upcomingEvents={upcomingEvents} setUpcomingEvents={setUpcomingEvents} />}
+            {tab === "Course à pied" && <RunningTab data={runData} setData={setRunData} raceNames={raceNames} setRaceNames={setRaceNamesRaw} upcomingEvents={upcomingEvents} setUpcomingEvents={setUpcomingEvents} />}
+            {tab === "Hyrox" && <HyroxTab data={hyroxData} setData={setHyroxData} partners={hyroxPartners} setPartners={setHyroxPartners} trainingData={hyroxTrainingData} setTrainingData={setHyroxTrainingData} templates={hyroxTemplates} setTemplates={setHyroxTemplatesRaw2} upcomingEvents={upcomingEvents} setUpcomingEvents={setUpcomingEvents} />}
+            {tab === "Karting" && <KartingTab data={kartingData} setData={setKartingData} upcomingEvents={upcomingEvents} setUpcomingEvents={setUpcomingEvents} />}
             {tab === "Poids & Corps" && <BodyTab data={bodyData} setData={setBodyData} />}
           </>
         )}
