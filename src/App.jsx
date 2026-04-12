@@ -3628,7 +3628,7 @@ function LineChart({ title, datasets, yFormat, sport }) {
   function svgY(y) { return PAD.top + ((maxY - y) / rangeY) * chartH; }
 
   return (
-    <div style={{ background: "#1f1f23", border: "1px solid #303036", borderRadius: 12, padding: "14px 16px", minWidth: 280, flex: 1 }}>
+    <div style={{ background: "#1f1f23", border: "1px solid #303036", borderRadius: 12, padding: "14px 16px", width: "calc(33% - 8px)", minWidth: 240, maxWidth: 340, flexShrink: 0, flexGrow: 0 }}>
       <div style={{ color: "#888", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>{title}</div>
       <svg width="100%" viewBox={"0 0 " + W + " " + H} style={{ overflow: "visible" }}>
         {[0, 0.5, 1].map(t => {
@@ -3644,12 +3644,19 @@ function LineChart({ title, datasets, yFormat, sport }) {
         {datasets.map(d => {
           if (d.points.length < 2) return null;
           const pts = d.points.map(p => svgX(p.x) + "," + svgY(p.y)).join(" ");
+          const best = Math.min(...d.points.map(p => p.y));
           return (
             <g key={d.label}>
               <polyline points={pts} fill="none" stroke={d.color} strokeWidth="2" strokeLinejoin="round" />
-              {d.points.map((p, i) => (
-                <circle key={i} cx={svgX(p.x)} cy={svgY(p.y)} r="3" fill={d.color} />
-              ))}
+              {d.points.map((p, i) => {
+                const isBest = p.y === best;
+                return (
+                  <g key={i}>
+                    <circle cx={svgX(p.x)} cy={svgY(p.y)} r={isBest ? 4 : 3} fill={d.color} stroke={isBest ? "#18181b" : "none"} strokeWidth="1.5" />
+                    {isBest && <text x={svgX(p.x)} y={svgY(p.y) - 8} textAnchor="middle" fontSize="8" fill={d.color} fontWeight="700">{yFormat(Math.round(p.y))}</text>}
+                  </g>
+                );
+              })}
             </g>
           );
         })}
@@ -3751,7 +3758,7 @@ function KartingCharts({ kartingData, visibleSports, collapsed, SectionHeader })
 
 function Dashboard({ runData, hyroxData, kartingData, bodyData, upcomingEvents, setUpcomingEvents }) {
   const [visibleSports, setVisibleSports] = useState(["Course à pied", "Hyrox", "Karting"]);
-  const [collapsed, setCollapsed] = useState({});
+  const [collapsed, setCollapsed] = useState({ upcoming: true, records: true, runCharts: true, hyroxCharts: true, kartCharts: true, recent: false });
 
   const toggleSport = (sport) => setVisibleSports(v => v.includes(sport) ? v.filter(s => s !== sport) : [...v, sport]);
   const toggleSection = (key) => setCollapsed(v => ({ ...v, [key]: !v[key] }));
