@@ -3592,6 +3592,80 @@ function PRToast({ message, onClose }) {
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
+// ── DASHBOARD HELPERS ────────────────────────────────────────────────────────
+const DASH_ATHLETE_COLORS = { Tom: "#60a5fa", Camille: "#f472b6" };
+
+function dashSecsFmt(s) {
+  if (s >= 3600) {
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    return h + "h" + String(m).padStart(2, "0");
+  }
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return m + ":" + String(sec).padStart(2, "0");
+}
+
+function LineChart({ title, datasets, yFormat, sport }) {
+  if (!datasets.some(d => d.points.length > 1)) return null;
+  const allPoints = datasets.flatMap(d => d.points);
+  if (!allPoints.length) return null;
+  const W = 320, H = 120;
+  const PAD = { top: 16, right: 16, bottom: 28, left: 48 };
+  const chartW = W - PAD.left - PAD.right;
+  const chartH = H - PAD.top - PAD.bottom;
+  const allVals = allPoints.map(p => p.y);
+  const minY = Math.min(...allVals);
+  const maxY = Math.max(...allVals);
+  const rangeY = maxY - minY || 1;
+  const allDates = allPoints.map(p => p.x);
+  const minX = Math.min(...allDates);
+  const maxX = Math.max(...allDates);
+  const rangeX = maxX - minX || 1;
+  const col = SPORT_COLORS[sport];
+
+  function svgX(x) { return PAD.left + ((x - minX) / rangeX) * chartW; }
+  function svgY(y) { return PAD.top + ((maxY - y) / rangeY) * chartH; }
+
+  return (
+    <div style={{ background: "#1f1f23", border: "1px solid #303036", borderRadius: 12, padding: "14px 16px", minWidth: 280, flex: 1 }}>
+      <div style={{ color: "#888", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>{title}</div>
+      <svg width="100%" viewBox={"0 0 " + W + " " + H} style={{ overflow: "visible" }}>
+        {[0, 0.5, 1].map(t => {
+          const val = minY + t * rangeY;
+          const y = svgY(val);
+          return (
+            <g key={t}>
+              <line x1={PAD.left} y1={y} x2={W - PAD.right} y2={y} stroke="#27272a" strokeWidth="1" />
+              <text x={PAD.left - 4} y={y + 4} textAnchor="end" fontSize="9" fill="#52525b">{yFormat(Math.round(val))}</text>
+            </g>
+          );
+        })}
+        {datasets.map(d => {
+          if (d.points.length < 2) return null;
+          const pts = d.points.map(p => svgX(p.x) + "," + svgY(p.y)).join(" ");
+          return (
+            <g key={d.label}>
+              <polyline points={pts} fill="none" stroke={d.color} strokeWidth="2" strokeLinejoin="round" />
+              {d.points.map((p, i) => (
+                <circle key={i} cx={svgX(p.x)} cy={svgY(p.y)} r="3" fill={d.color} />
+              ))}
+            </g>
+          );
+        })}
+      </svg>
+      <div style={{ display: "flex", gap: 12, marginTop: 6 }}>
+        {datasets.filter(d => d.points.length).map(d => (
+          <div key={d.label} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <div style={{ width: 10, height: 3, borderRadius: 2, background: d.color }} />
+            <span style={{ color: "#71717a", fontSize: 10 }}>{d.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function RecentActivity({ runData, hyroxData, kartingData, visibleSports, collapsed }) {
   if (collapsed["recent"]) return null;
   const recent = [
@@ -3643,11 +3717,7 @@ function KartingCharts({ kartingData, visibleSports, collapsed, SectionHeader })
   if (!hasData) return null;
 
   const ATHLETE_COLORS = { Tom: "#60a5fa", Camille: "#f472b6" };
-  const secsFmt = (s) => {
-    if (s >= 3600) { const h = Math.floor(s / 3600); const m = Math.floor((s % 3600) / 60); return h + "h" + String(m).padStart(2,"0"); }
-    const m = Math.floor(s / 60); const sec = s % 60;
-    return m + ":" + String(sec).padStart(2,"0");
-  };
+  const secsFmt = dashSecsFmt;
 
   const getDatasets = (circuit) => ATHLETES.map(a => ({
     label: a, color: ATHLETE_COLORS[a],
@@ -3769,85 +3839,10 @@ function Dashboard({ runData, hyroxData, kartingData, bodyData, upcomingEvents, 
   yearRecords.sort((a, b) => b.date.localeCompare(a.date));
 
   // ── Graphiques de progression ──
-  const ATHLETE_COLORS = { Tom: "#60a5fa", Camille: "#f472b6" };
-
-  const LineChart = ({ title, datasets, yFormat, sport }) => {
-    if (!datasets.some(d => d.points.length > 1)) return null;
-    const allPoints = datasets.flatMap(d => d.points);
-    if (!allPoints.length) return null;
-    const W = 320, H = 120, PAD = { top: 16, right: 16, bottom: 28, left: 48 };
-    const chartW = W - PAD.left - PAD.right;
-    const chartH = H - PAD.top - PAD.bottom;
-    const allVals = allPoints.map(p => p.y);
-    const minY = Math.min(...allVals);
-    const maxY = Math.max(...allVals);
-    const rangeY = maxY - minY || 1;
-    const allDates = allPoints.map(p => p.x);
-    const minX = Math.min(...allDates);
-    const maxX = Math.max(...allDates);
-    const rangeX = maxX - minX || 1;
-
-    const toSvgX = (x) => { const ratio = (x - minX) / rangeX; return PAD.left + ratio * chartW; };
-    const toSvgY = (y) => { const ratio = (maxY - y) / rangeY; return PAD.top + ratio * chartH; };
-
-    const col = SPORT_COLORS[sport];
-
-    return (
-      <div style={{ background: "#1f1f23", border: "1px solid #303036", borderRadius: 12, padding: "14px 16px", minWidth: 280, flex: 1 }}>
-        <div style={{ color: "#888", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>{title}</div>
-        <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ overflow: "visible" }}>
-          {/* Y axis labels */}
-          {[0, 0.5, 1].map(t => {
-            const val = minY + t * rangeY;
-            const y = toSvgY(val);
-            return (
-              <g key={t}>
-                <line x1={PAD.left} y1={y} x2={W - PAD.right} y2={y} stroke="#27272a" strokeWidth="1" />
-                <text x={PAD.left - 4} y={y + 4} textAnchor="end" fontSize="9" fill="#52525b">{yFormat(Math.round(val))}</text>
-              </g>
-            );
-          })}
-          {/* Lines + dots */}
-          {datasets.map(d => {
-            if (d.points.length < 2) return null;
-            const pts = d.points.map(p => `${toSvgX(p.x)},${toSvgY(p.y)}`).join(" ");
-            return (
-              <g key={d.label}>
-                <polyline points={pts} fill="none" stroke={d.color} strokeWidth="2" strokeLinejoin="round" />
-                {d.points.map((p, i) => (
-                  <circle key={i} cx={toSvgX(p.x)} cy={toSvgY(p.y)} r="3" fill={d.color} />
-                ))}
-              </g>
-            );
-          })}
-        </svg>
-        {/* Legend */}
-        <div style={{ display: "flex", gap: 12, marginTop: 6 }}>
-          {datasets.filter(d => d.points.length).map(d => (
-            <div key={d.label} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-              <div style={{ width: 10, height: 3, borderRadius: 2, background: d.color }} />
-              <span style={{ color: "#71717a", fontSize: 10 }}>{d.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  const secsFmt = (s) => {
-    if (s >= 3600) {
-      const h = Math.floor(s / 3600);
-      const m = Math.floor((s % 3600) / 60);
-      return `${h}h${String(m).padStart(2,"0")}`;
-    }
-    const m = Math.floor(s / 60); const sec = s % 60;
-    return `${m}:${String(sec).padStart(2,"0")}`;
-  };
-
   const toDatasets = (distOrStation, getEntries, getVal) =>
     ATHLETES.map(a => ({
       label: a,
-      color: ATHLETE_COLORS[a],
+      color: DASH_DASH_ATHLETE_COLORS[a],
       points: getEntries(a).map(r => ({ x: new Date(r.date).getTime(), y: getVal(r) })),
     }));
 
@@ -3949,12 +3944,12 @@ function Dashboard({ runData, hyroxData, kartingData, bodyData, upcomingEvents, 
               const hasData = ATHLETES.some(a => runData.filter(r => r.athlete === a && r.distance === dist && r.secs).length > 1);
               if (!hasData) return null;
               const datasets = ATHLETES.map(a => ({
-                label: a, color: ATHLETE_COLORS[a],
+                label: a, color: DASH_ATHLETE_COLORS[a],
                 points: runData.filter(r => r.athlete === a && r.distance === dist && r.secs)
                   .sort((a, b) => a.date.localeCompare(b.date))
                   .map(r => ({ x: new Date(r.date).getTime(), y: r.secs })),
               }));
-              return <LineChart key={dist} title={dist} datasets={datasets} yFormat={secsFmt} sport="Course à pied" />;
+              return <LineChart key={dist} title={dist} datasets={datasets} yFormat={dashSecsFmt} sport="Course à pied" />;
             })}
           </div>)}
         </div>
@@ -3969,24 +3964,24 @@ function Dashboard({ runData, hyroxData, kartingData, bodyData, upcomingEvents, 
               const hasData = ATHLETES.some(a => hyroxData.filter(r => r.athlete === a && r.totalSecs).length > 1);
               if (!hasData) return null;
               const datasets = ATHLETES.map(a => ({
-                label: a, color: ATHLETE_COLORS[a],
+                label: a, color: DASH_ATHLETE_COLORS[a],
                 points: hyroxData.filter(r => r.athlete === a && r.totalSecs)
                   .sort((a, b) => a.date.localeCompare(b.date))
                   .map(r => ({ x: new Date(r.date).getTime(), y: r.totalSecs })),
               }));
-              return <LineChart key="total" title="Temps total" datasets={datasets} yFormat={secsFmt} sport="Hyrox" />;
+              return <LineChart key="total" title="Temps total" datasets={datasets} yFormat={dashSecsFmt} sport="Hyrox" />;
             })()}
             {/* Stations */}
             {HYROX_STATIONS.map(station => {
               const hasData = ATHLETES.some(a => hyroxData.filter(r => r.athlete === a && r.stationSecs?.[station]).length > 1);
               if (!hasData) return null;
               const datasets = ATHLETES.map(a => ({
-                label: a, color: ATHLETE_COLORS[a],
+                label: a, color: DASH_ATHLETE_COLORS[a],
                 points: hyroxData.filter(r => r.athlete === a && r.stationSecs?.[station])
                   .sort((a, b) => a.date.localeCompare(b.date))
                   .map(r => ({ x: new Date(r.date).getTime(), y: r.stationSecs[station] })),
               }));
-              return <LineChart key={station} title={station} datasets={datasets} yFormat={secsFmt} sport="Hyrox" />;
+              return <LineChart key={station} title={station} datasets={datasets} yFormat={dashSecsFmt} sport="Hyrox" />;
             })}
           </div>)}
         </div>
