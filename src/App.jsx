@@ -3787,8 +3787,8 @@ function Dashboard({ runData, hyroxData, kartingData, bodyData, upcomingEvents, 
     const maxX = Math.max(...allDates);
     const rangeX = maxX - minX || 1;
 
-    const toSvgX = x => PAD.left + ((x - minX) / rangeX) * chartW;
-    const toSvgY = y => PAD.top + ((maxY - y) / rangeY) * chartH;
+    const toSvgX = (x) => { const ratio = (x - minX) / rangeX; return PAD.left + ratio * chartW; };
+    const toSvgY = (y) => { const ratio = (maxY - y) / rangeY; return PAD.top + ratio * chartH; };
 
     const col = SPORT_COLORS[sport];
 
@@ -4006,7 +4006,7 @@ function Dashboard({ runData, hyroxData, kartingData, bodyData, upcomingEvents, 
         />
       </div>
     </div>
-  )};
+  );
 }
 // ── FIREBASE ──────────────────────────────────────────────────────────────────
 const FIREBASE_CONFIG = {
