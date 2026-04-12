@@ -153,7 +153,7 @@ function parseTimeInput(str) {
 }
 
 // ── ACTIVITY MODAL ────────────────────────────────────────────────────────────
-function ActivityModal({ entry, onClose, templates }) {
+function ActivityModal({ entry, onClose, onEdit, templates }) {
   if (!entry) return null;
   const type = entry._modalType;
   const col = SPORT_COLORS[
@@ -192,12 +192,21 @@ function ActivityModal({ entry, onClose, templates }) {
             </div>
             <div style={{ color: "#71717a", fontSize: 13, marginTop: 2 }}>{entry.date}</div>
           </div>
-          <button onClick={onClose} style={{
-            background: "transparent", border: "1px solid #3f3f46",
-            borderRadius: 8, color: "#888", fontSize: 18, cursor: "pointer",
-            width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center",
-            flexShrink: 0,
-          }}>×</button>
+          <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+            {onEdit && (
+              <button onClick={() => { onEdit(entry); onClose(); }} style={{
+                background: "transparent", border: `1px solid ${col.main}55`,
+                borderRadius: 8, color: col.main, fontSize: 13, cursor: "pointer",
+                padding: "0 14px", height: 32, fontFamily: "inherit", fontWeight: 700,
+                display: "flex", alignItems: "center", gap: 5,
+              }}>✎ Modifier</button>
+            )}
+            <button onClick={onClose} style={{
+              background: "transparent", border: "1px solid #3f3f46",
+              borderRadius: 8, color: "#888", fontSize: 18, cursor: "pointer",
+              width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center",
+            }}>×</button>
+          </div>
         </div>
 
         {/* ── COURSE À PIED ── */}
@@ -1204,7 +1213,7 @@ function RunningTab({ data, setData, raceNames, setRaceNames }) {
           ))}
         </div>
       )}
-      <ActivityModal entry={selectedEntry} onClose={() => setSelectedEntry(null)} />
+      <ActivityModal entry={selectedEntry} onClose={() => setSelectedEntry(null)} onEdit={r => startEdit(r)} />
     </div>
   );
 }
@@ -2420,7 +2429,7 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
           })()}
         </div>
       )}
-      <ActivityModal entry={selectedEntry} onClose={() => setSelectedEntry(null)} templates={templates} />
+      <ActivityModal entry={selectedEntry} onClose={() => setSelectedEntry(null)} templates={templates} onEdit={r => r._isTraining ? handleEditTraining(r) : startEdit(r)} />
     </div>
   );
 }
@@ -2735,7 +2744,7 @@ function KartingTab({ data, setData }) {
           })}
         </div>
       )}
-      <ActivityModal entry={selectedEntry} onClose={() => setSelectedEntry(null)} />
+      <ActivityModal entry={selectedEntry} onClose={() => setSelectedEntry(null)} onEdit={r => startEdit(r)} />
     </div>
   );
 }
