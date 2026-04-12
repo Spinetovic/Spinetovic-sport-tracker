@@ -3509,20 +3509,35 @@ function PRToast({ message, onClose }) {
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
 function Dashboard({ runData, hyroxData, kartingData, bodyData }) {
+  const [expandedAthlete, setExpandedAthlete] = useState(null);
+
   const recent = [
     ...runData.map(r => ({ ...r, sport: "Course à pied" })),
     ...hyroxData.map(r => ({ ...r, sport: "Hyrox" })),
     ...(kartingData||[]).map(r => ({ ...r, sport: "Karting" })),
-  ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 8);
+  ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 6);
 
-  // PRs par athlète
-  const getRunPRs = (athlete) => {
-    const prs = {};
-    RUNNING_PR_DISTANCES.forEach(dist => {
-      const runs = runData.filter(r => r.athlete === athlete && r.distance === dist && r.secs);
-      if (runs.length) prs[dist] = runs.reduce((b, r) => r.secs < b.secs ? r : b);
-    });
-    return prs;
+  // ── Calculs PRs et deltas ──
+  const getRunHistory = (athlete, dist) => {
+    return runData
+      .filter(r => r.athlete === athlete && r.distance === dist && r.secs)
+      .sort((a, b) => a.date.localeCompare(b.date));
+  };
+
+  const getRunPR = (athlete, dist) => {
+    const runs = getRunHistory(athlete, dist);
+    return runs.length ? runs.reduce((b, r) => r.secs < b.secs ? r : b) : null;
+  };
+
+  const getRunPRDelta = (athlete, dist) => {
+    // Différence entre l'avant-dernier PR et le PR actuel
+    const runs = getRunHistory(athlete, dist);
+    if (runs.length < 2) return null;
+    const pr = runs.reduce((b, r) => r.secs < b.secs ? r : b);
+    const prevPRs = runs.filter(r => r.id !== pr.id);
+    if (!prevPRs.length) return null;
+    const prevBest = prevPRs.reduce((b, r) => r.secs < b.secs ? r : b);
+    return pr.secs - prevBest.secs; // négatif = amélioration
   };
 
   const getHyroxPR = (athlete) => {
@@ -3530,54 +3545,217 @@ function Dashboard({ runData, hyroxData, kartingData, bodyData }) {
     return races.length ? races.reduce((b, r) => r.totalSecs < b.totalSecs ? r : b) : null;
   };
 
+  const getHyroxPRDelta = (athlete) => {
+    const races = hyroxData.filter(r => r.athlete === athlete && r.totalSecs).sort((a, b) => a.date.localeCompare(b.date));
+    if (races.length < 2) return null;
+    const pr = races.reduce((b, r) => r.totalSecs < b.totalSecs ? r : b);
+    const prev = races.filter(r => r.id !== pr.id).reduce((b, r) => r.totalSecs < b.totalSecs ? r : b);
+    return pr.totalSecs - prev.totalSecs;
+  };
+
+  const getKartingPR = (athlete, session) => {
+    const entries = (kartingData||[]).filter(r => r.athlete === athlete && r.session === session && r.rank && r.total);
+    return entries.length ? entries.reduce((b, r) => parseInt(r.rank) < parseInt(b.rank) ? r : b) : null;
+  };
+
+  const formatDelta = (secs) => {
+    if (secs === null) return null;
+    const abs = Math.abs(secs);
+    const m = Math.floor(abs / 60);
+    const s = abs % 60;
+    const str = m > 0 ? `${m}m${String(s).padStart(2,"0")}s` : `${s}s`;
+    return secs < 0 ? { label: `▼ ${str}`, color: "#4ade80" } : { label: `▲ ${str}`, color: "#f87171" };
+  };
+
+  // Runs avec distances ayant au moins un résultat
+  const distancesWithData = (athlete) => RUNNING_PR_DISTANCES.filter(d => runData.some(r => r.athlete === athlete && r.distance === d && r.secs));
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      {/* Cartes athlètes */}
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-        {ATHLETES.map(a => {
-          const runPRs = getRunPRs(a);
-          const hyroxPR = getHyroxPR(a);
-          const totalActivities = runData.filter(r => r.athlete === a).length + hyroxData.filter(r => r.athlete === a).length + (kartingData||[]).filter(r => r.athlete === a).length;
 
-          return (
-            <div key={a} style={{ flex: 1, minWidth: 260, background: "#1f1f23", border: "1px solid #1e1e1e", borderRadius: 16, padding: "20px 24px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <div style={{ color: "#fff", fontWeight: 900, fontSize: 20 }}>{a}</div>
-                <div style={{ color: "#71717a", fontSize: 12 }}>{totalActivities} activité{totalActivities > 1 ? "s" : ""}</div>
-              </div>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
-                <StatCard label="Sorties run" value={runData.filter(r => r.athlete === a).length} color={SPORT_COLORS["Course à pied"].main} />
-                <StatCard label="Hyrox" value={hyroxData.filter(r => r.athlete === a).length} color={SPORT_COLORS["Hyrox"].main} />
-                <StatCard label="Karting" value={(kartingData||[]).filter(r => r.athlete === a).length} color={SPORT_COLORS["Karting"].main} />
-              </div>
+      {/* ── Cartes athlètes ── */}
+      {ATHLETES.map(a => {
+        const runPRDists = distancesWithData(a);
+        const hyroxPR = getHyroxPR(a);
+        const hyroxDelta = getHyroxPRDelta(a);
+        const totalActivities = runData.filter(r => r.athlete === a).length + hyroxData.filter(r => r.athlete === a).length + (kartingData||[]).filter(r => r.athlete === a).length;
+        const isExpanded = expandedAthlete === a;
 
-              {/* PRs résumé */}
-              <div style={{ borderTop: "1px solid #1a1a1a", paddingTop: 14 }}>
-                <div style={{ color: "#71717a", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>🏆 Records</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {Object.entries(runPRs).slice(0, 3).map(([dist, pr]) => (
-                    <div key={dist} style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ color: "#888", fontSize: 12 }}>🏃 {dist}</span>
-                      <span style={{ color: SPORT_COLORS["Course à pied"].main, fontWeight: 700, fontSize: 12 }}>{formatTime(pr.secs)}</span>
-                    </div>
-                  ))}
-                  {hyroxPR && (
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ color: "#888", fontSize: 12 }}>⚡ Hyrox</span>
-                      <span style={{ color: SPORT_COLORS["Hyrox"].main, fontWeight: 700, fontSize: 12 }}>{formatTime(hyroxPR.totalSecs)}</span>
-                    </div>
-                  )}
-                  {!Object.keys(runPRs).length && !hyroxPR && (
-                    <div style={{ color: "#52525b", fontSize: 12 }}>Aucun record encore</div>
-                  )}
+        return (
+          <div key={a} style={{ background: "#1f1f23", border: "1px solid #303036", borderRadius: 16, overflow: "hidden" }}>
+
+            {/* Header athlète */}
+            <div
+              onClick={() => setExpandedAthlete(isExpanded ? null : a)}
+              style={{ padding: "18px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <div style={{ color: "#fff", fontWeight: 900, fontSize: 22 }}>{a}</div>
+                <div style={{ color: "#52525b", fontSize: 12 }}>{totalActivities} activité{totalActivities > 1 ? "s" : ""}</div>
+              </div>
+              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <StatCard label="Run" value={runData.filter(r => r.athlete === a).length} color={SPORT_COLORS["Course à pied"].main} />
+                  <StatCard label="Hyrox" value={hyroxData.filter(r => r.athlete === a).length} color={SPORT_COLORS["Hyrox"].main} />
+                  <StatCard label="Kart" value={(kartingData||[]).filter(r => r.athlete === a).length} color={SPORT_COLORS["Karting"].main} />
                 </div>
+                <span style={{ color: "#52525b", fontSize: 16 }}>{isExpanded ? "▲" : "▼"}</span>
               </div>
             </div>
-          );
-        })}
-      </div>
 
-      {/* Activité récente */}
+            {/* Records détaillés — expandable */}
+            {isExpanded && (
+              <div style={{ borderTop: "1px solid #303036", padding: "20px 24px", display: "flex", flexDirection: "column", gap: 20 }}>
+
+                {/* Course à pied */}
+                {runPRDists.length > 0 && (
+                  <div>
+                    <div style={{ color: "#71717a", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
+                      🏃 Course à pied
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {runPRDists.map(dist => {
+                        const pr = getRunPR(a, dist);
+                        const delta = formatDelta(getRunPRDelta(a, dist));
+                        const history = getRunHistory(a, dist);
+                        return (
+                          <div key={dist} style={{ background: "#27272a", borderRadius: 12, padding: "12px 16px" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <div>
+                                <div style={{ color: "#888", fontSize: 11, marginBottom: 4 }}>{dist}</div>
+                                <div style={{ color: SPORT_COLORS["Course à pied"].main, fontWeight: 900, fontSize: 22 }}>{formatTime(pr.secs)}</div>
+                                <div style={{ color: "#52525b", fontSize: 11, marginTop: 2 }}>{formatDate(pr.date)}{pr.raceName ? ` · ${pr.raceName}` : ""}</div>
+                              </div>
+                              <div style={{ textAlign: "right" }}>
+                                {delta && (
+                                  <div style={{ color: delta.color, fontWeight: 700, fontSize: 13, marginBottom: 4 }}>{delta.label}</div>
+                                )}
+                                {pr.pace && <div style={{ color: "#52525b", fontSize: 11 }}>{pr.pace}/km</div>}
+                                <div style={{ color: "#52525b", fontSize: 11 }}>{history.length} course{history.length > 1 ? "s" : ""}</div>
+                              </div>
+                            </div>
+                            {/* Mini progression bar */}
+                            {history.length > 1 && (() => {
+                              const best = Math.min(...history.map(r => r.secs));
+                              const worst = Math.max(...history.map(r => r.secs));
+                              const range = worst - best || 1;
+                              return (
+                                <div style={{ marginTop: 10, display: "flex", gap: 3, alignItems: "flex-end", height: 24 }}>
+                                  {history.slice(-8).map((r, i) => {
+                                    const h = Math.max(4, ((worst - r.secs) / range) * 20 + 4);
+                                    const isPR = r.secs === best;
+                                    return (
+                                      <div key={r.id} style={{ flex: 1, height: h, borderRadius: 2, background: isPR ? SPORT_COLORS["Course à pied"].main : SPORT_COLORS["Course à pied"].main + "44" }} title={formatTime(r.secs)} />
+                                    );
+                                  })}
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Hyrox */}
+                {hyroxPR && (
+                  <div>
+                    <div style={{ color: "#71717a", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
+                      ⚡ Hyrox
+                    </div>
+                    <div style={{ background: "#27272a", borderRadius: 12, padding: "12px 16px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div>
+                          <div style={{ color: "#888", fontSize: 11, marginBottom: 4 }}>
+                            {hyroxPR.eventName || "Meilleur temps"}{hyroxPR.category && hyroxPR.category !== "Solo" ? ` · ${hyroxPR.category}` : ""}
+                          </div>
+                          <div style={{ color: SPORT_COLORS["Hyrox"].main, fontWeight: 900, fontSize: 22 }}>{formatTime(hyroxPR.totalSecs)}</div>
+                          <div style={{ color: "#52525b", fontSize: 11, marginTop: 2 }}>{formatDate(hyroxPR.date)}</div>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          {hyroxDelta && (() => { const d = formatDelta(hyroxDelta); return d ? <div style={{ color: d.color, fontWeight: 700, fontSize: 13 }}>{d.label}</div> : null; })()}
+                          {hyroxPR.runSecs && <div style={{ color: "#52525b", fontSize: 11, marginTop: 4 }}>Run: {formatTime(hyroxPR.runSecs)}</div>}
+                          {hyroxPR.roxzoneSecs && <div style={{ color: "#52525b", fontSize: 11 }}>Roxzone: {formatTime(hyroxPR.roxzoneSecs)}</div>}
+                        </div>
+                      </div>
+                      {/* Mini barre progression Hyrox */}
+                      {hyroxData.filter(r => r.athlete === a && r.totalSecs).length > 1 && (() => {
+                        const races = hyroxData.filter(r => r.athlete === a && r.totalSecs).sort((x, y) => x.date.localeCompare(y.date));
+                        const best = Math.min(...races.map(r => r.totalSecs));
+                        const worst = Math.max(...races.map(r => r.totalSecs));
+                        const range = worst - best || 1;
+                        return (
+                          <div style={{ marginTop: 10, display: "flex", gap: 3, alignItems: "flex-end", height: 24 }}>
+                            {races.slice(-8).map(r => {
+                              const h = Math.max(4, ((worst - r.totalSecs) / range) * 20 + 4);
+                              return <div key={r.id} style={{ flex: 1, height: h, borderRadius: 2, background: r.totalSecs === best ? SPORT_COLORS["Hyrox"].main : SPORT_COLORS["Hyrox"].main + "44" }} />;
+                            })}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                )}
+
+                {/* Karting */}
+                {(kartingData||[]).some(r => r.athlete === a) && (
+                  <div>
+                    <div style={{ color: "#71717a", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
+                      🏎️ Karting
+                    </div>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      {KARTING_SESSIONS.map(sess => {
+                        const pr = getKartingPR(a, sess);
+                        if (!pr) return null;
+                        const pct = calcPct(pr.rank, pr.total);
+                        return (
+                          <div key={sess} style={{ background: "#27272a", borderRadius: 10, padding: "10px 14px", flex: 1, minWidth: 100 }}>
+                            <div style={{ color: "#52525b", fontSize: 10, marginBottom: 4 }}>{sess}</div>
+                            <div style={{ color: SPORT_COLORS["Karting"].main, fontWeight: 800, fontSize: 18 }}>P{pr.rank}<span style={{ color: "#52525b", fontSize: 12, fontWeight: 400 }}>/{pr.total}</span></div>
+                            {pct && <div style={{ color: SPORT_COLORS["Karting"].main, fontSize: 10, fontWeight: 700 }}>top {pct}%</div>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {!runPRDists.length && !hyroxPR && !(kartingData||[]).some(r => r.athlete === a) && (
+                  <div style={{ color: "#52525b", fontSize: 13, textAlign: "center", padding: "8px 0" }}>Aucun record pour l'instant.</div>
+                )}
+              </div>
+            )}
+
+            {/* Preview PRs (collapsed) */}
+            {!isExpanded && (
+              <div style={{ padding: "0 24px 18px", display: "flex", gap: 16, flexWrap: "wrap" }}>
+                {runPRDists.slice(0, 3).map(dist => {
+                  const pr = getRunPR(a, dist);
+                  const delta = formatDelta(getRunPRDelta(a, dist));
+                  return (
+                    <div key={dist} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ color: "#52525b", fontSize: 12 }}>🏃 {dist}</span>
+                      <span style={{ color: SPORT_COLORS["Course à pied"].main, fontWeight: 700, fontSize: 13 }}>{formatTime(pr.secs)}</span>
+                      {delta && <span style={{ color: delta.color, fontSize: 11, fontWeight: 700 }}>{delta.label}</span>}
+                    </div>
+                  );
+                })}
+                {hyroxPR && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ color: "#52525b", fontSize: 12 }}>⚡ Hyrox</span>
+                    <span style={{ color: SPORT_COLORS["Hyrox"].main, fontWeight: 700, fontSize: 13 }}>{formatTime(hyroxPR.totalSecs)}</span>
+                    {hyroxDelta && (() => { const d = formatDelta(hyroxDelta); return d ? <span style={{ color: d.color, fontSize: 11, fontWeight: 700 }}>{d.label}</span> : null; })()}
+                  </div>
+                )}
+                {!runPRDists.length && !hyroxPR && <span style={{ color: "#52525b", fontSize: 12 }}>Clique pour voir les détails</span>}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {/* ── Activité récente ── */}
       <div>
         <div style={{ color: "#fff", fontWeight: 800, fontSize: 15, marginBottom: 12 }}>Activité récente</div>
         {recent.length === 0 ? (
@@ -3587,18 +3765,20 @@ function Dashboard({ runData, hyroxData, kartingData, bodyData }) {
           return (
             <div key={r.id} style={{
               display: "flex", justifyContent: "space-between", alignItems: "center",
-              padding: "12px 18px", background: "#1f1f23", border: "1px solid #1a1a1a",
+              padding: "12px 18px", background: "#1f1f23", border: "1px solid #303036",
+              borderLeft: `3px solid ${col.main}`,
               borderRadius: 12, marginBottom: 8,
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <span style={{ fontSize: 20 }}>{SPORT_ICONS[r.sport]}</span>
+                <span style={{ fontSize: 18 }}>{SPORT_ICONS[r.sport]}</span>
                 <div>
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     <Badge color={col.main}>{r.athlete}</Badge>
                     <span style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>{r.sport}</span>
-                    {r.raceName && <span style={{ color: "#888", fontSize: 12 }}>· {r.raceName}</span>}
+                    {r.raceName && <span style={{ color: "#71717a", fontSize: 12 }}>· {r.raceName}</span>}
+                    {r.eventName && <span style={{ color: "#71717a", fontSize: 12 }}>· {r.eventName}</span>}
                   </div>
-                  <div style={{ color: "#888", fontSize: 12, marginTop: 2 }}>{formatDate(r.date)}</div>
+                  <div style={{ color: "#71717a", fontSize: 11, marginTop: 2 }}>{formatDate(r.date)}</div>
                 </div>
               </div>
               <div style={{ color: col.main, fontWeight: 700, fontSize: 15 }}>
