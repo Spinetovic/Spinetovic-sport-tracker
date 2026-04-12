@@ -3963,7 +3963,7 @@ function Dashboard({ runData, hyroxData, kartingData, bodyData, upcomingEvents, 
                 <div style={{ color: col.main, fontWeight: 700, fontSize: 15 }}>
                   {r.sport === "Course à pied" && r.secs ? formatTime(r.secs) : ""}
                   {r.sport === "Hyrox" && r.totalSecs ? formatTime(r.totalSecs) : ""}
-                  {r.sport === "Karting" && r.rank ? `P${r.rank}${r.total ? `/${r.total}` : ""} · ${r.session}` : ""}
+                  {r.sport === "Karting" && r.rank ? ("P" + r.rank + (r.total ? "/" + r.total : "") + " · " + r.session) : ""}
                 </div>
               </div>
             );
