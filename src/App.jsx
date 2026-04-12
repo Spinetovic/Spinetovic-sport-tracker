@@ -3842,7 +3842,7 @@ function Dashboard({ runData, hyroxData, kartingData, bodyData, upcomingEvents, 
   const toDatasets = (distOrStation, getEntries, getVal) =>
     ATHLETES.map(a => ({
       label: a,
-      color: DASH_DASH_ATHLETE_COLORS[a],
+      color: DASH_ATHLETE_COLORS[a],
       points: getEntries(a).map(r => ({ x: new Date(r.date).getTime(), y: getVal(r) })),
     }));
 
@@ -3894,7 +3894,7 @@ function Dashboard({ runData, hyroxData, kartingData, bodyData, upcomingEvents, 
                 </div>
               );
             })}
-          </div>)}
+          </div>\n</div>)}
         </div>
       )}
 
