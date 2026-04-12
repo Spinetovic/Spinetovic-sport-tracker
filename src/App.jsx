@@ -3607,11 +3607,11 @@ function dashSecsFmt(s) {
 }
 
 function LineChart({ title, datasets, yFormat, sport }) {
-  if (!datasets.some(d => d.points.length > 1)) return null;
+  if (!datasets.some(d => d.points.length > 0)) return null;
   const allPoints = datasets.flatMap(d => d.points);
   if (!allPoints.length) return null;
-  const W = 320, H = 120;
-  const PAD = { top: 16, right: 16, bottom: 28, left: 48 };
+  const W = 320, H = 140;
+  const PAD = { top: 16, right: 16, bottom: 36, left: 48 };
   const chartW = W - PAD.left - PAD.right;
   const chartH = H - PAD.top - PAD.bottom;
   const allVals = allPoints.map(p => p.y);
@@ -3627,10 +3627,21 @@ function LineChart({ title, datasets, yFormat, sport }) {
   function svgX(x) { return PAD.left + ((x - minX) / rangeX) * chartW; }
   function svgY(y) { return PAD.top + ((maxY - y) / rangeY) * chartH; }
 
+  // X axis labels : show 3-4 dates spread out
+  const allSortedDates = [...new Set(allDates)].sort((a, b) => a - b);
+  const xLabelCount = Math.min(4, allSortedDates.length);
+  const xLabels = xLabelCount <= 1 ? allSortedDates : Array.from({ length: xLabelCount }, (_, i) => allSortedDates[Math.round(i * (allSortedDates.length - 1) / (xLabelCount - 1))]);
+
+  const fmtXDate = (ts) => {
+    const d = new Date(ts);
+    return (d.getMonth() + 1).toString().padStart(2,"0") + "/" + d.getFullYear().toString().slice(2);
+  };
+
   return (
     <div style={{ background: "#1f1f23", border: "1px solid #303036", borderRadius: 12, padding: "14px 16px", width: "calc(33% - 8px)", minWidth: 240, maxWidth: 340, flexShrink: 0, flexGrow: 0 }}>
       <div style={{ color: "#888", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>{title}</div>
       <svg width="100%" viewBox={"0 0 " + W + " " + H} style={{ overflow: "visible" }}>
+        {/* Y grid + labels */}
         {[0, 0.5, 1].map(t => {
           const val = minY + t * rangeY;
           const y = svgY(val);
@@ -3641,19 +3652,34 @@ function LineChart({ title, datasets, yFormat, sport }) {
             </g>
           );
         })}
+        {/* X axis line */}
+        <line x1={PAD.left} y1={PAD.top + chartH} x2={W - PAD.right} y2={PAD.top + chartH} stroke="#303036" strokeWidth="1" />
+        {/* X axis labels */}
+        {xLabels.map((ts, i) => (
+          <text key={i} x={svgX(ts)} y={PAD.top + chartH + 14} textAnchor="middle" fontSize="8" fill="#52525b">{fmtXDate(ts)}</text>
+        ))}
+        {/* Lines + dots */}
         {datasets.map(d => {
-          if (d.points.length < 2) return null;
-          const pts = d.points.map(p => svgX(p.x) + "," + svgY(p.y)).join(" ");
+          if (!d.points.length) return null;
           const best = Math.min(...d.points.map(p => p.y));
+          const dashed = d.dashed;
           return (
             <g key={d.label}>
-              <polyline points={pts} fill="none" stroke={d.color} strokeWidth="2" strokeLinejoin="round" />
+              {d.points.length > 1 && (
+                <polyline
+                  points={d.points.map(p => svgX(p.x) + "," + svgY(p.y)).join(" ")}
+                  fill="none" stroke={d.color} strokeWidth={dashed ? 1.5 : 2}
+                  strokeLinejoin="round"
+                  strokeDasharray={dashed ? "4 3" : "none"}
+                  opacity={dashed ? 0.7 : 1}
+                />
+              )}
               {d.points.map((p, i) => {
                 const isBest = p.y === best;
                 return (
                   <g key={i}>
-                    <circle cx={svgX(p.x)} cy={svgY(p.y)} r={isBest ? 4 : 3} fill={d.color} stroke={isBest ? "#18181b" : "none"} strokeWidth="1.5" />
-                    {isBest && <text x={svgX(p.x)} y={svgY(p.y) - 8} textAnchor="middle" fontSize="8" fill={d.color} fontWeight="700">{yFormat(Math.round(p.y))}</text>}
+                    <circle cx={svgX(p.x)} cy={svgY(p.y)} r={isBest ? 4 : 3} fill={dashed ? "#1f1f23" : d.color} stroke={d.color} strokeWidth={dashed ? 1.5 : (isBest ? 1.5 : 0)} />
+                    {isBest && !dashed && <text x={svgX(p.x)} y={svgY(p.y) - 8} textAnchor="middle" fontSize="8" fill={d.color} fontWeight="700">{yFormat(Math.round(p.y))}</text>}
                   </g>
                 );
               })}
@@ -3661,11 +3687,14 @@ function LineChart({ title, datasets, yFormat, sport }) {
           );
         })}
       </svg>
-      <div style={{ display: "flex", gap: 12, marginTop: 6 }}>
+      {/* Legend */}
+      <div style={{ display: "flex", gap: 10, marginTop: 4, flexWrap: "wrap" }}>
         {datasets.filter(d => d.points.length).map(d => (
-          <div key={d.label} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            <div style={{ width: 10, height: 3, borderRadius: 2, background: d.color }} />
-            <span style={{ color: "#71717a", fontSize: 10 }}>{d.label}</span>
+          <div key={d.label + (d.dashed ? "-t" : "")} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <svg width="14" height="6">
+              <line x1="0" y1="3" x2="14" y2="3" stroke={d.color} strokeWidth="2" strokeDasharray={d.dashed ? "3 2" : "none"} />
+            </svg>
+            <span style={{ color: "#71717a", fontSize: 9 }}>{d.label}{d.dashed ? " (entr.)" : ""}</span>
           </div>
         ))}
       </div>
@@ -3756,7 +3785,7 @@ function KartingCharts({ kartingData, visibleSports, collapsed, SectionHeader })
   );
 }
 
-function Dashboard({ runData, hyroxData, kartingData, bodyData, upcomingEvents, setUpcomingEvents }) {
+function Dashboard({ runData, hyroxData, hyroxTrainingData, hyroxTemplates, kartingData, bodyData, upcomingEvents, setUpcomingEvents }) {
   const [visibleSports, setVisibleSports] = useState(["Course à pied", "Hyrox", "Karting"]);
   const [collapsed, setCollapsed] = useState({ upcoming: true, records: true, runCharts: true, hyroxCharts: true, kartCharts: true, recent: false });
 
@@ -3812,6 +3841,43 @@ function Dashboard({ runData, hyroxData, kartingData, bodyData, upcomingEvents, 
   yearRecords.sort((a, b) => b.date.localeCompare(a.date));
 
   const makeDatasets = (getPoints) => ATHLETES.map(a => ({ label: a, color: DASH_ATHLETE_COLORS[a], points: getPoints(a) }));
+
+  // Helper: get training station times via templates
+  const getTrainingStationPoints = (athlete, station) => {
+    const stationTypes = ["SkiErg", "Sled Push", "Sled Pull", "Burpee Broad Jump", "Rowing", "Farmers Carry", "Sandbag Lunges", "Wall Balls"];
+    const officialDist = ["1000", "50", "50", "80", "1000", "200", "100", "100"];
+    const stIdx = HYROX_STATIONS.indexOf(station);
+    if (stIdx === -1) return [];
+    const targetType = stationTypes[stIdx];
+    const targetDist = officialDist[stIdx];
+    const points = [];
+    (hyroxTrainingData || []).filter(r => r.athlete === athlete && r.segments && r.templateId).forEach(r => {
+      const tpl = (hyroxTemplates || []).find(t => String(t.id) === String(r.templateId));
+      if (!tpl) return;
+      tpl.segments.forEach((seg, i) => {
+        if (seg.type === targetType && seg.distance === targetDist) {
+          const secs = parseTimeInput(r.segments[i]);
+          if (secs) points.push({ x: new Date(r.date).getTime(), y: secs });
+        }
+      });
+    });
+    return points.sort((a, b) => a.x - b.x);
+  };
+
+  const makeHyroxDatasets = (station) => {
+    const result = [];
+    ATHLETES.forEach(a => {
+      // Courses officielles — trait plein
+      const racePts = hyroxData.filter(r => r.athlete === a && (station ? r.stationSecs && r.stationSecs[station] : r.totalSecs)).sort((a, b) => a.date.localeCompare(b.date)).map(r => ({ x: new Date(r.date).getTime(), y: station ? r.stationSecs[station] : r.totalSecs }));
+      if (racePts.length) result.push({ label: a, color: DASH_ATHLETE_COLORS[a], points: racePts, dashed: false });
+      // Entraînements — trait pointillé (stations seulement, pas temps total)
+      if (station) {
+        const trainPts = getTrainingStationPoints(a, station);
+        if (trainPts.length) result.push({ label: a, color: DASH_ATHLETE_COLORS[a], points: trainPts, dashed: true });
+      }
+    });
+    return result;
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
@@ -3912,8 +3978,8 @@ function Dashboard({ runData, hyroxData, kartingData, bodyData, upcomingEvents, 
               {[null, ...HYROX_STATIONS].map(station => {
                 const key = station || "total";
                 const title = station || "Temps total";
-                const datasets = makeDatasets(a => hyroxData.filter(r => r.athlete === a && (station ? r.stationSecs && r.stationSecs[station] : r.totalSecs)).sort((a, b) => a.date.localeCompare(b.date)).map(r => ({ x: new Date(r.date).getTime(), y: station ? r.stationSecs[station] : r.totalSecs })));
-                if (!datasets.some(d => d.points.length > 1)) return null;
+                const datasets = makeHyroxDatasets(station);
+                if (!datasets.some(d => d.points.length > 0)) return null;
                 return <LineChart key={key} title={title} datasets={datasets} yFormat={dashSecsFmt} sport="Hyrox" />;
               })}
             </div>
@@ -4160,7 +4226,7 @@ export default function App() {
           </div>
         ) : (
           <>
-            {tab === "Dashboard" && <Dashboard runData={runData} hyroxData={hyroxData} kartingData={kartingData} bodyData={bodyData} upcomingEvents={upcomingEvents} setUpcomingEvents={setUpcomingEvents} />}
+            {tab === "Dashboard" && <Dashboard runData={runData} hyroxData={hyroxData} hyroxTrainingData={hyroxTrainingData} hyroxTemplates={hyroxTemplates} kartingData={kartingData} bodyData={bodyData} upcomingEvents={upcomingEvents} setUpcomingEvents={setUpcomingEvents} />}
             {tab === "Course à pied" && <RunningTab data={runData} setData={setRunData} raceNames={raceNames} setRaceNames={setRaceNamesRaw} upcomingEvents={upcomingEvents} setUpcomingEvents={setUpcomingEvents} />}
             {tab === "Hyrox" && <HyroxTab data={hyroxData} setData={setHyroxData} partners={hyroxPartners} setPartners={setHyroxPartners} trainingData={hyroxTrainingData} setTrainingData={setHyroxTrainingData} templates={hyroxTemplates} setTemplates={setHyroxTemplatesRaw2} upcomingEvents={upcomingEvents} setUpcomingEvents={setUpcomingEvents} />}
             {tab === "Karting" && <KartingTab data={kartingData} setData={setKartingData} upcomingEvents={upcomingEvents} setUpcomingEvents={setUpcomingEvents} />}
