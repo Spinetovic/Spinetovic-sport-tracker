@@ -152,6 +152,220 @@ function parseTimeInput(str) {
   return null;
 }
 
+// ── ACTIVITY MODAL ────────────────────────────────────────────────────────────
+function ActivityModal({ entry, onClose, templates }) {
+  if (!entry) return null;
+  const type = entry._modalType;
+  const col = SPORT_COLORS[
+    type === "run" ? "Course à pied" :
+    type === "hyrox" ? "Hyrox" :
+    type === "karting" ? "Karting" :
+    "Poids & Corps"
+  ];
+
+  return (
+    <div onClick={onClose} style={{
+      position: "fixed", inset: 0, zIndex: 2000,
+      background: "rgba(0,0,0,0.7)", display: "flex",
+      alignItems: "center", justifyContent: "center",
+      padding: 16,
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        background: "#1f1f23", border: `1px solid ${col.border}`,
+        borderRadius: 20, padding: "24px 28px", width: "100%", maxWidth: 520,
+        maxHeight: "85vh", overflowY: "auto",
+        boxShadow: "0 24px 64px rgba(0,0,0,0.6)",
+      }}>
+        {/* Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+          <div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6, flexWrap: "wrap" }}>
+              <Badge color={col.main}>{entry.athlete}</Badge>
+              {type === "hyrox" && entry._isTraining && <Badge color="#a78bfa">Entraînement</Badge>}
+              {type === "hyrox" && !entry._isTraining && <Badge color={col.main}>Course</Badge>}
+            </div>
+            <div style={{ color: "#fff", fontWeight: 900, fontSize: 20 }}>
+              {type === "run" && (entry.raceName || entry.distance)}
+              {type === "hyrox" && !entry._isTraining && (entry.eventName || "Hyrox")}
+              {type === "hyrox" && entry._isTraining && (templates?.find(t => String(t.id) === String(entry.templateId))?.name || "Entraînement")}
+              {type === "karting" && (entry.circuit || "RKO Angerville")}
+            </div>
+            <div style={{ color: "#71717a", fontSize: 13, marginTop: 2 }}>{entry.date}</div>
+          </div>
+          <button onClick={onClose} style={{
+            background: "transparent", border: "1px solid #3f3f46",
+            borderRadius: 8, color: "#888", fontSize: 18, cursor: "pointer",
+            width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center",
+            flexShrink: 0,
+          }}>×</button>
+        </div>
+
+        {/* ── COURSE À PIED ── */}
+        {type === "run" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              {entry.distance && <div style={{ background: "#27272a", borderRadius: 10, padding: "10px 16px" }}>
+                <div style={{ color: "#71717a", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>Distance</div>
+                <div style={{ color: "#fff", fontWeight: 700, fontSize: 16 }}>{entry.distance}</div>
+              </div>}
+              {entry.secs && <div style={{ background: col.light, border: `1px solid ${col.border}`, borderRadius: 10, padding: "10px 16px" }}>
+                <div style={{ color: "#71717a", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>Temps</div>
+                <div style={{ color: col.main, fontWeight: 900, fontSize: 22 }}>{formatTime(entry.secs)}</div>
+              </div>}
+              {entry.pace && <div style={{ background: "#27272a", borderRadius: 10, padding: "10px 16px" }}>
+                <div style={{ color: "#71717a", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>Allure</div>
+                <div style={{ color: "#fff", fontWeight: 700, fontSize: 16 }}>{entry.pace}/km</div>
+              </div>}
+            </div>
+            {(entry.rankOverall || entry.rankGender) && (
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                {entry.rankOverall && <div style={{ background: "#27272a", borderRadius: 10, padding: "10px 16px", flex: 1 }}>
+                  <div style={{ color: "#71717a", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>Classement général</div>
+                  <div style={{ color: "#fff", fontWeight: 700 }}>{entry.rankOverall}{entry.totalOverall ? `/${entry.totalOverall}` : ""}</div>
+                  {calcPct(entry.rankOverall, entry.totalOverall) && <div style={{ color: col.main, fontSize: 11 }}>top {calcPct(entry.rankOverall, entry.totalOverall)}%</div>}
+                </div>}
+                {entry.rankGender && <div style={{ background: "#27272a", borderRadius: 10, padding: "10px 16px", flex: 1 }}>
+                  <div style={{ color: "#71717a", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>Classement genre</div>
+                  <div style={{ color: "#fff", fontWeight: 700 }}>{entry.rankGender}{entry.totalGender ? `/${entry.totalGender}` : ""}</div>
+                  {calcPct(entry.rankGender, entry.totalGender) && <div style={{ color: col.main, fontSize: 11 }}>top {calcPct(entry.rankGender, entry.totalGender)}%</div>}
+                </div>}
+              </div>
+            )}
+            {entry.notes && <div style={{ color: "#71717a", fontSize: 13, fontStyle: "italic" }}>{entry.notes}</div>}
+          </div>
+        )}
+
+        {/* ── HYROX COURSE ── */}
+        {type === "hyrox" && !entry._isTraining && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              {entry.totalSecs && <div style={{ background: col.light, border: `1px solid ${col.border}`, borderRadius: 10, padding: "10px 16px" }}>
+                <div style={{ color: "#71717a", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>Temps total</div>
+                <div style={{ color: col.main, fontWeight: 900, fontSize: 22 }}>{formatTime(entry.totalSecs)}</div>
+              </div>}
+              {entry.runSecs && <div style={{ background: "#27272a", borderRadius: 10, padding: "10px 16px" }}>
+                <div style={{ color: "#71717a", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>Run total</div>
+                <div style={{ color: "#fff", fontWeight: 700, fontSize: 16 }}>{formatTime(entry.runSecs)}</div>
+              </div>}
+              {entry.roxzoneSecs && <div style={{ background: "#27272a", borderRadius: 10, padding: "10px 16px" }}>
+                <div style={{ color: "#71717a", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>Roxzone</div>
+                <div style={{ color: "#fff", fontWeight: 700, fontSize: 16 }}>{formatTime(entry.roxzoneSecs)}</div>
+              </div>}
+            </div>
+            {entry.category && entry.category !== "Solo" && (
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <Badge color="#888">{entry.category}</Badge>
+                {entry.partner && <span style={{ color: "#888", fontSize: 13 }}>avec {entry.partner}</span>}
+              </div>
+            )}
+            {entry.stationSecs && Object.values(entry.stationSecs).some(Boolean) && (
+              <div>
+                <div style={{ color: "#71717a", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>Stations</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  {HYROX_STATIONS.map(s => entry.stationSecs[s] ? (
+                    <div key={s} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #27272a" }}>
+                      <span style={{ color: "#888", fontSize: 13 }}>{s}</span>
+                      <span style={{ color: col.main, fontWeight: 700, fontSize: 13 }}>{formatTime(entry.stationSecs[s])}</span>
+                    </div>
+                  ) : null)}
+                </div>
+              </div>
+            )}
+            {entry.runSecs_splits && Object.values(entry.runSecs_splits).some(Boolean) && (
+              <div>
+                <div style={{ color: "#71717a", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>Splits de run</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {HYROX_RUNS.map((run, i) => entry.runSecs_splits[run] ? (
+                    <div key={run} style={{ background: "#27272a", borderRadius: 6, padding: "4px 10px", fontSize: 12 }}>
+                      <span style={{ color: "#555" }}>R{i+1} </span>
+                      <span style={{ color: "#aaa", fontWeight: 700 }}>{formatTime(entry.runSecs_splits[run])}</span>
+                    </div>
+                  ) : null)}
+                </div>
+              </div>
+            )}
+            {entry.notes && <div style={{ color: "#71717a", fontSize: 13, fontStyle: "italic" }}>{entry.notes}</div>}
+          </div>
+        )}
+
+        {/* ── HYROX ENTRAÎNEMENT ── */}
+        {type === "hyrox" && entry._isTraining && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              {entry.totalTime && <div style={{ background: col.light, border: `1px solid ${col.border}`, borderRadius: 10, padding: "10px 16px" }}>
+                <div style={{ color: "#71717a", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>Temps total</div>
+                <div style={{ color: col.main, fontWeight: 900, fontSize: 22 }}>{entry.totalTime}</div>
+              </div>}
+              {entry.isShared && entry.trainingPartner && <div style={{ background: "#27272a", borderRadius: 10, padding: "10px 16px" }}>
+                <div style={{ color: "#71717a", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>Partenaire</div>
+                <div style={{ color: "#fff", fontWeight: 700 }}>{entry.trainingPartner}</div>
+              </div>}
+            </div>
+            {(() => {
+              const tpl = templates?.find(t => String(t.id) === String(entry.templateId));
+              if (!tpl || !entry.segments) return null;
+              return (
+                <div>
+                  <div style={{ color: "#71717a", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>Segments</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    {tpl.segments.map((seg, i) => {
+                      const timeStr = entry.segments[i];
+                      if (!timeStr) return null;
+                      const isRun = seg.type === "Run" || seg.type === "Vélo";
+                      const distKm = seg.distance ? (seg.unit === "km" ? parseFloat(seg.distance) : parseFloat(seg.distance) / 1000) : null;
+                      const secs = parseTimeInput(timeStr);
+                      const pace = isRun && secs && distKm ? (() => {
+                        const spk = secs / distKm;
+                        return `${Math.floor(spk/60)}:${String(Math.round(spk%60)).padStart(2,"0")}/km`;
+                      })() : null;
+                      return (
+                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid #27272a" }}>
+                          <span style={{ color: "#888", fontSize: 13 }}>{seg.distance ? `${seg.distance}${seg.unit} ` : ""}{seg.type}</span>
+                          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                            {pace && <span style={{ color: "#a78bfa", fontSize: 11 }}>{pace}</span>}
+                            <span style={{ color: col.main, fontWeight: 700, fontSize: 13 }}>{timeStr}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+            {entry.notes && <div style={{ color: "#71717a", fontSize: 13, fontStyle: "italic" }}>{entry.notes}</div>}
+          </div>
+        )}
+
+        {/* ── KARTING ── */}
+        {type === "karting" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <div style={{ background: "#27272a", borderRadius: 10, padding: "10px 16px" }}>
+                <div style={{ color: "#71717a", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>Session</div>
+                <div style={{ color: "#fff", fontWeight: 700 }}>{entry.session}</div>
+              </div>
+              {entry.group && <div style={{ background: "#27272a", borderRadius: 10, padding: "10px 16px" }}>
+                <div style={{ color: "#71717a", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>Groupe</div>
+                <div style={{ color: "#fff", fontWeight: 700 }}>{entry.group}</div>
+              </div>}
+              {entry.rank && <div style={{ background: col.light, border: `1px solid ${col.border}`, borderRadius: 10, padding: "10px 16px" }}>
+                <div style={{ color: "#71717a", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>Place</div>
+                <div style={{ color: col.main, fontWeight: 900, fontSize: 22 }}>P{entry.rank}{entry.total ? <span style={{ color: "#555", fontSize: 14, fontWeight: 400 }}>/{entry.total}</span> : ""}</div>
+                {calcPct(entry.rank, entry.total) && <div style={{ color: col.main, fontSize: 11 }}>top {calcPct(entry.rank, entry.total)}%</div>}
+              </div>}
+              {entry.bestLap && <div style={{ background: "#27272a", borderRadius: 10, padding: "10px 16px" }}>
+                <div style={{ color: "#71717a", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>Meilleur tour</div>
+                <div style={{ color: "#fff", fontWeight: 700, fontFamily: "monospace", fontSize: 16 }}>{entry.bestLap}</div>
+              </div>}
+            </div>
+            {entry.notes && <div style={{ color: "#71717a", fontSize: 13, fontStyle: "italic" }}>{entry.notes}</div>}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function SearchBar({ value, onChange, placeholder = "Rechercher…" }) {
   return (
     <div style={{ position: "relative", flex: 1, maxWidth: 280 }}>
@@ -672,6 +886,7 @@ function RunningTab({ data, setData, raceNames, setRaceNames }) {
   const [form, setForm] = useState(defaultRunForm);
   const [filter, setFilter] = useState("Tous");
   const [search, setSearch] = useState("");
+  const [selectedEntry, setSelectedEntry] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [newRaceName, setNewRaceName] = useState("");
   const [showAddRace, setShowAddRace] = useState(false);
@@ -928,13 +1143,18 @@ function RunningTab({ data, setData, raceNames, setRaceNames }) {
           {sorted.length === 0 ? (
             <div style={{ color: "#52525b", textAlign: "center", padding: 40, fontSize: 14 }}>{search ? "Aucun résultat pour cette recherche" : "Aucune sortie enregistrée"}</div>
           ) : sorted.map(r => (
-            <div key={r.id} style={{
+            <div key={r.id} onClick={() => setSelectedEntry({ ...r, _modalType: "run" })} style={{
               padding: "14px 18px",
               background: "#1f1f23",
-              border: "1px solid #1a1a1a",
+              border: "1px solid #303036",
               borderRadius: 12,
               marginBottom: 8,
-            }}>
+              cursor: "pointer",
+              transition: "border-color 0.15s",
+            }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = col.main + "66"}
+              onMouseLeave={e => e.currentTarget.style.borderColor = "#303036"}
+            >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
@@ -944,7 +1164,7 @@ function RunningTab({ data, setData, raceNames, setRaceNames }) {
                   </div>
                   <div style={{ color: "#888", fontSize: 12 }}>{r.date}{r.notes && ` · ${r.notes}`}</div>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }} onClick={e => e.stopPropagation()}>
                   <ActionButtons accentColor={col.main} onEdit={() => startEdit(r)} onDelete={() => deleteRun(r.id)} />
                   <div style={{ textAlign: "right" }}>
                     <div style={{ color: col.main, fontWeight: 800, fontSize: 18 }}>{formatTime(r.secs)}</div>
@@ -984,6 +1204,7 @@ function RunningTab({ data, setData, raceNames, setRaceNames }) {
           ))}
         </div>
       )}
+      <ActivityModal entry={selectedEntry} onClose={() => setSelectedEntry(null)} />
     </div>
   );
 }
@@ -1775,6 +1996,7 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
   const [form, setForm] = useState(defaultHyroxForm);
   const [filter, setFilter] = useState("Tous");
   const [search, setSearch] = useState("");
+  const [selectedEntry, setSelectedEntry] = useState(null);
   const [newPartner, setNewPartner] = useState("");
   const [showAddPartner, setShowAddPartner] = useState(false);
   const [trainingEditId, setTrainingEditId] = useState(null);
@@ -2061,14 +2283,21 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
               const entryIcon = isCourse ? "⚡" : "🏋️";
 
               return (
-                <div key={r.id} style={{
-                  background: "#1f1f23",
-                  border: "1px solid #303036",
-                  borderLeft: `4px solid ${entryColor}`,
-                  borderRadius: 14,
-                  padding: "16px 20px",
-                  marginBottom: 10,
-                }}>
+                <div key={r.id}
+                  onClick={() => setSelectedEntry({ ...r, _modalType: "hyrox", _isTraining: !isCourse })}
+                  style={{
+                    background: "#1f1f23",
+                    border: "1px solid #303036",
+                    borderLeft: `4px solid ${entryColor}`,
+                    borderRadius: 14,
+                    padding: "16px 20px",
+                    marginBottom: 10,
+                    cursor: "pointer",
+                    transition: "border-color 0.15s",
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = entryColor}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = "#303036"; e.currentTarget.style.borderLeftColor = entryColor; }}
+                >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6, flexWrap: "wrap" }}>
@@ -2096,7 +2325,7 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
                       </div>
                       {r.notes && <div style={{ color: "#71717a", fontSize: 12, marginTop: 4 }}>{r.notes}</div>}
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, marginLeft: 12 }}>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, marginLeft: 12 }} onClick={e => e.stopPropagation()}>
                       <ActionButtons accentColor={entryColor}
                         onEdit={() => isCourse ? startEdit(r) : handleEditTraining(r)}
                         onDelete={() => isCourse ? deleteEntry(r.id) : setTrainingData(d => d.filter(x => x.id !== r.id))}
@@ -2180,6 +2409,7 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
           })()}
         </div>
       )}
+      <ActivityModal entry={selectedEntry} onClose={() => setSelectedEntry(null)} templates={templates} />
     </div>
   );
 }
@@ -2195,6 +2425,7 @@ function KartingTab({ data, setData }) {
   const [editingId, setEditingId] = useState(null);
   const [filter, setFilter] = useState("Tous");
   const [search, setSearch] = useState("");
+  const [selectedEntry, setSelectedEntry] = useState(null);
   const [bulkMode, setBulkMode] = useState(false);
   const [bulkForms, setBulkForms] = useState(
     KARTING_SESSIONS.map(s => ({ ...defaultKartForm, session: s }))
@@ -2466,22 +2697,24 @@ function KartingTab({ data, setData }) {
                   return sessEntries.map(r => {
                     const pct = calcPct(r.rank, r.total);
                     return (
-                      <div key={r.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 18px", borderBottom: "1px solid #111" }}>
+                      <div key={r.id}
+                        onClick={() => setSelectedEntry({ ...r, _modalType: "karting" })}
+                        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 18px", borderBottom: "1px solid #111", cursor: "pointer", transition: "background 0.15s" }}
+                        onMouseEnter={e => e.currentTarget.style.background = "#27272a"}
+                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                      >
                         <div style={{ display: "flex", alignItems: "center", gap: 16, flex: 1 }}>
-                          {/* Session */}
                           <div style={{ color: "#666", fontSize: 12, width: 110, flexShrink: 0 }}>{r.session}</div>
-                          {/* Groupe */}
                           <div style={{ color: "#888", fontSize: 12, width: 60, flexShrink: 0 }}>{r.group ? `Gr. ${r.group}` : ""}</div>
-                          {/* Place */}
                           <div style={{ width: 100, flexShrink: 0 }}>
                             {r.rank && <span style={{ color: col.main, fontWeight: 800, fontSize: 18 }}>P{r.rank}<span style={{ color: "#71717a", fontWeight: 400, fontSize: 12 }}>{r.total ? `/${r.total}` : ""}</span></span>}
                             {pct && <div style={{ color: col.main, fontSize: 10, fontWeight: 700 }}>top {pct}%</div>}
                           </div>
-                          {/* Meilleur tour */}
                           <div style={{ color: "#888", fontSize: 13, fontFamily: "monospace" }}>{r.bestLap || "—"}</div>
                         </div>
-                        {/* Actions */}
-                        <ActionButtons accentColor={col.main} onEdit={() => startEdit(r)} onDelete={() => deleteEntry(r.id)} />
+                        <div onClick={e => e.stopPropagation()}>
+                          <ActionButtons accentColor={col.main} onEdit={() => startEdit(r)} onDelete={() => deleteEntry(r.id)} />
+                        </div>
                       </div>
                     );
                   });
@@ -2491,6 +2724,7 @@ function KartingTab({ data, setData }) {
           })}
         </div>
       )}
+      <ActivityModal entry={selectedEntry} onClose={() => setSelectedEntry(null)} />
     </div>
   );
 }
