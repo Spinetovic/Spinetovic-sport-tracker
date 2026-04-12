@@ -1998,6 +1998,7 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
   const [search, setSearch] = useState("");
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [newPartner, setNewPartner] = useState("");
+  const [showTraining, setShowTraining] = useState(true);
   const [showAddPartner, setShowAddPartner] = useState(false);
   const [trainingEditId, setTrainingEditId] = useState(null);
 
@@ -2261,11 +2262,21 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
                 fontWeight: 700, fontSize: 12, cursor: "pointer",
               }}>{f}</button>
             ))}
+            <button onClick={() => setShowTraining(v => !v)} style={{
+              padding: "5px 14px", borderRadius: "999px", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 12,
+              border: `1.5px solid ${showTraining ? "#a78bfa" : "#303036"}`,
+              background: showTraining ? "#a78bfa22" : "transparent",
+              color: showTraining ? "#a78bfa" : "#555",
+            }}>
+              {showTraining ? "✓ " : ""}Entraînements
+            </button>
             <SearchBar value={search} onChange={setSearch} placeholder="Rechercher ville, événement…" />
           </div>
           {(() => {
-            // Fusionner courses et entraînements
-            const trainingFiltered = filter === "Tous" ? (trainingData || []) : (trainingData || []).filter(r => r.athlete === filter);
+            // Fusionner courses et entraînements (selon toggle)
+            const trainingFiltered = showTraining
+              ? (filter === "Tous" ? (trainingData || []) : (trainingData || []).filter(r => r.athlete === filter))
+              : [];
             const allEntries = [
               ...sorted.map(r => ({ ...r, _type: "course" })),
               ...trainingFiltered.map(r => ({ ...r, _type: "training" })),
