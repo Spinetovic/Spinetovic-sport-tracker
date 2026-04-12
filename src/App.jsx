@@ -3694,15 +3694,16 @@ function Dashboard({ runData, hyroxData, kartingData, bodyData, upcomingEvents, 
     </div>
   );
 
+  const MS_PER_DAY = 1000 * 60 * 60 * 24;
   const today = new Date().toISOString().slice(0, 10);
-  const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const oneYearAgo = new Date(Date.now() - 365 * MS_PER_DAY).toISOString().slice(0, 10);
 
   // ── Courses à venir ──
   const upcoming = (upcomingEvents || [])
     .filter(e => e.date >= today)
     .sort((a, b) => a.date.localeCompare(b.date));
 
-  const daysUntil = (dateStr) => Math.ceil((new Date(dateStr) - new Date()) / (1000 * 60 * 60 * 24));
+  const daysUntil = (dateStr) => Math.ceil((new Date(dateStr) - new Date()) / MS_PER_DAY);
 
   // ── Records de l'année (fil d'actualité) ──
   const yearRecords = [];
