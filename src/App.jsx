@@ -3595,6 +3595,17 @@ function PRToast({ message, onClose }) {
 function Dashboard({ runData, hyroxData, kartingData, bodyData, upcomingEvents, setUpcomingEvents }) {
   const [visibleSports, setVisibleSports] = useState(["Course à pied", "Hyrox", "Karting"]);
   const toggleSport = (sport) => setVisibleSports(v => v.includes(sport) ? v.filter(s => s !== sport) : [...v, sport]);
+  const [collapsed, setCollapsed] = useState({});
+  const toggleSection = (key) => setCollapsed(v => ({ ...v, [key]: !v[key] }));
+  const SectionHeader = ({ sectionKey, label }) => (
+    <div
+      onClick={() => toggleSection(sectionKey)}
+      style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: collapsed[sectionKey] ? 0 : 12, cursor: "pointer", userSelect: "none" }}
+    >
+      <div style={{ color: "#fff", fontWeight: 800, fontSize: 15 }}>{label}</div>
+      <span style={{ color: "#52525b", fontSize: 13 }}>{collapsed[sectionKey] ? "▼" : "▲"}</span>
+    </div>
+  );
 
   const today = new Date().toISOString().slice(0, 10);
   const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -3736,6 +3747,11 @@ function Dashboard({ runData, hyroxData, kartingData, bodyData, upcomingEvents, 
   };
 
   const secsFmt = (s) => {
+    if (s >= 3600) {
+      const h = Math.floor(s / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      return `${h}h${String(m).padStart(2,"0")}`;
+    }
     const m = Math.floor(s / 60); const sec = s % 60;
     return `${m}:${String(sec).padStart(2,"0")}`;
   };
@@ -3771,7 +3787,8 @@ function Dashboard({ runData, hyroxData, kartingData, bodyData, upcomingEvents, 
       {/* ── Courses à venir ── */}
       {upcoming.length > 0 && (
         <div>
-          <div style={{ color: "#fff", fontWeight: 800, fontSize: 15, marginBottom: 12 }}>📅 À venir</div>
+          <SectionHeader sectionKey="upcoming" label="📅 À venir" />
+          {!collapsed["upcoming"] && (<div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             {upcoming.filter(e => visibleSports.includes(e.sport) || !e.sport).map(e => {
               const col = SPORT_COLORS[e.sport] || SPORT_COLORS["Hyrox"];
@@ -3794,14 +3811,15 @@ function Dashboard({ runData, hyroxData, kartingData, bodyData, upcomingEvents, 
                 </div>
               );
             })}
-          </div>
+          </div>)}
         </div>
       )}
 
       {/* ── Fil d'actualité records de l'année ── */}
       {yearRecords.filter(r => visibleSports.includes(r.sport)).length > 0 && (
         <div>
-          <div style={{ color: "#fff", fontWeight: 800, fontSize: 15, marginBottom: 12 }}>🏆 Records de l'année</div>
+          <SectionHeader sectionKey="records" label="🏆 Records de l'année" />
+          {!collapsed["records"] && (<div>
           <div style={{ display: "flex", flexDirection: "column", gap: 0, borderLeft: "2px solid #303036", marginLeft: 8 }}>
             {yearRecords.filter(r => visibleSports.includes(r.sport)).map((rec, i) => (
               <div key={i} style={{ display: "flex", gap: 16, paddingLeft: 20, paddingBottom: 16, position: "relative" }}>
@@ -3830,15 +3848,15 @@ function Dashboard({ runData, hyroxData, kartingData, bodyData, upcomingEvents, 
                 </div>
               </div>
             ))}
-          </div>
+          </div>)}
         </div>
       )}
 
       {/* ── Graphiques de progression ── */}
       {visibleSports.includes("Course à pied") && (
         <div>
-          <div style={{ color: "#fff", fontWeight: 800, fontSize: 15, marginBottom: 12 }}>📈 Progression Course à pied</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+          <SectionHeader sectionKey="runCharts" label="📈 Progression Course à pied" />
+          {!collapsed["runCharts"] && (<div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
             {RUNNING_PR_DISTANCES.map(dist => {
               const hasData = ATHLETES.some(a => runData.filter(r => r.athlete === a && r.distance === dist && r.secs).length > 1);
               if (!hasData) return null;
@@ -3850,14 +3868,14 @@ function Dashboard({ runData, hyroxData, kartingData, bodyData, upcomingEvents, 
               }));
               return <LineChart key={dist} title={dist} datasets={datasets} yFormat={secsFmt} sport="Course à pied" />;
             })}
-          </div>
+          </div>)}
         </div>
       )}
 
       {visibleSports.includes("Hyrox") && (
         <div>
-          <div style={{ color: "#fff", fontWeight: 800, fontSize: 15, marginBottom: 12 }}>📈 Progression Hyrox</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+          <SectionHeader sectionKey="hyroxCharts" label="📈 Progression Hyrox" />
+          {!collapsed["hyroxCharts"] && (<div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
             {/* Temps total */}
             {(() => {
               const hasData = ATHLETES.some(a => hyroxData.filter(r => r.athlete === a && r.totalSecs).length > 1);
@@ -3882,7 +3900,7 @@ function Dashboard({ runData, hyroxData, kartingData, bodyData, upcomingEvents, 
               }));
               return <LineChart key={station} title={station} datasets={datasets} yFormat={secsFmt} sport="Hyrox" />;
             })}
-          </div>
+          </div>)}
         </div>
       )}
 
@@ -3892,8 +3910,8 @@ function Dashboard({ runData, hyroxData, kartingData, bodyData, upcomingEvents, 
         if (!hasData) return null;
         return (
           <div>
-            <div style={{ color: "#fff", fontWeight: 800, fontSize: 15, marginBottom: 12 }}>📈 Progression Karting</div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+            <SectionHeader sectionKey="kartCharts" label="📈 Progression Karting" />
+            {!collapsed["kartCharts"] && (<div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
               {circuits.map(circuit => {
                 const datasets = ATHLETES.map(a => ({
                   label: a, color: ATHLETE_COLORS[a],
@@ -3918,15 +3936,15 @@ function Dashboard({ runData, hyroxData, kartingData, bodyData, upcomingEvents, 
 
       {/* ── Activité récente ── */}
       <div>
-        <div style={{ color: "#fff", fontWeight: 800, fontSize: 15, marginBottom: 12 }}>Activité récente</div>
-        {(() => {
+        <SectionHeader sectionKey="recent" label="Activité récente" />
+        {!collapsed["recent"] && (() => {
           const recent = [
             ...runData.filter(r => visibleSports.includes("Course à pied")).map(r => ({ ...r, sport: "Course à pied" })),
             ...hyroxData.filter(r => visibleSports.includes("Hyrox")).map(r => ({ ...r, sport: "Hyrox" })),
             ...(kartingData||[]).filter(r => visibleSports.includes("Karting")).map(r => ({ ...r, sport: "Karting" })),
           ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 6);
           if (!recent.length) return <div style={{ color: "#52525b", textAlign: "center", padding: 32 }}>Aucune activité pour l'instant.</div>;
-          return recent.map(r => {
+          return <div>{recent.map(r => {
             const col = SPORT_COLORS[r.sport];
             return (
               <div key={r.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 18px", background: "#1f1f23", border: "1px solid #303036", borderLeft: `3px solid ${col.main}`, borderRadius: 12, marginBottom: 8 }}>
@@ -3950,12 +3968,12 @@ function Dashboard({ runData, hyroxData, kartingData, bodyData, upcomingEvents, 
               </div>
             );
           });
+          })}</div>;
         })()}
       </div>
     </div>
   );
 }
-
 // ── FIREBASE ──────────────────────────────────────────────────────────────────
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyDl3eJd7g-CHsqR2omtKueVcv8bxOHswao",
