@@ -3828,12 +3828,39 @@ function Dashboard({ runData, hyroxData, hyroxTrainingData, hyroxTemplates, kart
       }
     });
     HYROX_STATIONS.forEach(station => {
+      const stationTypes = ["SkiErg", "Sled Push", "Sled Pull", "Burpee Broad Jump", "Rowing", "Farmers Carry", "Sandbag Lunges", "Wall Balls"];
+      const officialDist = ["1000", "50", "50", "80", "1000", "200", "100", "100"];
+      const stIdx = HYROX_STATIONS.indexOf(station);
+      const targetType = stationTypes[stIdx];
+      const targetDist = officialDist[stIdx];
+
+      // Courses officielles
       const stRaces = races.filter(r => r.stationSecs && r.stationSecs[station]);
       stRaces.filter(r => r.date >= oneYearAgo).forEach(run => {
         const before = stRaces.filter(r => r.date < run.date);
         const prevBest = before.length ? Math.min(...before.map(r => r.stationSecs[station])) : null;
         if (!prevBest || run.stationSecs[station] < prevBest) {
-          yearRecords.push({ date: run.date, athlete, sport: "Hyrox", label: station, value: formatTime(run.stationSecs[station]), delta: prevBest ? run.stationSecs[station] - prevBest : null, color: SPORT_COLORS["Hyrox"].main, icon: "⚡" });
+          yearRecords.push({ date: run.date, athlete, sport: "Hyrox", label: station, value: formatTime(run.stationSecs[station]), sub: "Course", delta: prevBest ? run.stationSecs[station] - prevBest : null, color: SPORT_COLORS["Hyrox"].main, icon: "⚡" });
+        }
+      });
+
+      // Entraînements
+      const trainEntries = [];
+      (hyroxTrainingData || []).filter(r => r.athlete === athlete && r.segments && r.templateId).forEach(r => {
+        const tpl = (hyroxTemplates || []).find(t => String(t.id) === String(r.templateId));
+        if (!tpl) return;
+        tpl.segments.forEach((seg, i) => {
+          if (seg.type === targetType && seg.distance === targetDist) {
+            const secs = parseTimeInput(r.segments[i]);
+            if (secs) trainEntries.push({ date: r.date, secs, source: tpl.name });
+          }
+        });
+      });
+      trainEntries.sort((a, b) => a.date.localeCompare(b.date)).filter(e => e.date >= oneYearAgo).forEach(entry => {
+        const before = trainEntries.filter(e => e.date < entry.date);
+        const prevBest = before.length ? Math.min(...before.map(e => e.secs)) : null;
+        if (!prevBest || entry.secs < prevBest) {
+          yearRecords.push({ date: entry.date, athlete, sport: "Hyrox", label: station, value: formatTime(entry.secs), sub: "Entraînement · " + entry.source, delta: prevBest ? entry.secs - prevBest : null, color: "#a78bfa", icon: "🏋️" });
         }
       });
     });
