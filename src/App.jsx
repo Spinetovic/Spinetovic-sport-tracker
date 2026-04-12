@@ -4006,7 +4006,7 @@ function Dashboard({ runData, hyroxData, kartingData, bodyData, upcomingEvents, 
         />
       </div>
     </div>
-  );
+  )
 }
 // ── FIREBASE ──────────────────────────────────────────────────────────────────
 const FIREBASE_CONFIG = {
