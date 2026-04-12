@@ -135,8 +135,15 @@ const defaultRunForm = { date: "", distance: "", time: "", pace: "", raceName: "
 const HYROX_CATEGORIES = ["Solo", "Double Mixte", "Double Hommes", "Double Femmes"];
 const defaultHyroxForm = { date: "", eventName: "", totalTime: "", runTime: "", roxzoneTime: "", category: "Solo", partner: "", stations: {}, runs: {}, checkpoints: {}, notes: "", athlete: "Tom" };
 
-function formatTime(seconds) {
-  if (!seconds) return "-";
+const MOIS = ["jan.", "fév.", "mars", "avr.", "mai", "juin", "juil.", "août", "sep.", "oct.", "nov.", "déc."];
+function formatDate(dateStr) {
+  if (!dateStr) return "";
+  const [y, m, d] = dateStr.split("-");
+  if (!y || !m || !d) return dateStr;
+  return `${parseInt(d)} ${MOIS[parseInt(m) - 1]} ${y}`;
+}
+
+function formatTime(seconds) {  if (!seconds) return "-";
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   const s = seconds % 60;
@@ -190,7 +197,7 @@ function ActivityModal({ entry, onClose, onEdit, templates }) {
               {type === "hyrox" && entry._isTraining && (templates?.find(t => String(t.id) === String(entry.templateId))?.name || "Entraînement")}
               {type === "karting" && (entry.circuit || "RKO Angerville")}
             </div>
-            <div style={{ color: "#71717a", fontSize: 13, marginTop: 2 }}>{entry.date}</div>
+            <div style={{ color: "#71717a", fontSize: 13, marginTop: 2 }}>{formatDate(entry.date)}</div>
           </div>
           <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
             {onEdit && (
@@ -594,7 +601,7 @@ function RunningRecords({ data }) {
                     {pr ? (
                       <div>
                         <div style={{ color: col.main, fontWeight: 800, fontSize: 18 }}>{formatTime(pr.secs)}</div>
-                        <div style={{ color: "#71717a", fontSize: 11, marginTop: 2 }}>{pr.date}{pr.pace ? ` · ${pr.pace}/km` : ""}</div>
+                        <div style={{ color: "#71717a", fontSize: 11, marginTop: 2 }}>{formatDate(pr.date)}{pr.pace ? ` · ${pr.pace}/km` : ""}</div>
                       </div>
                     ) : <span style={{ color: "#3f3f46", fontSize: 20, fontWeight: 800 }}>—</span>}
                   </div>
@@ -840,7 +847,7 @@ function RunningRecords({ data }) {
                     return (
                       <div key={r.id} style={{ display: "grid", gridTemplateColumns: "1fr 80px 80px 70px 90px 90px 80px", minWidth: 500, borderBottom: i < runs.length - 1 ? "1px solid #111" : "none", background: i % 2 === 0 ? "#1f1f23" : "#27272a" }}>
                         <div style={{ padding: "12px 14px", color: "#777", fontSize: 13 }}>
-                          {r.date}
+                          {formatDate(r.date)}
                           {isPR && <span style={{ marginLeft: 8, color: col.main, fontSize: 10, fontWeight: 800 }}>★ PR</span>}
                         </div>
                         <div style={{ padding: "12px 14px" }}>
@@ -1171,7 +1178,7 @@ function RunningTab({ data, setData, raceNames, setRaceNames }) {
                     <span style={{ color: "#fff", fontWeight: 700 }}>{r.distance}</span>
                     {r.raceName && <span style={{ color: "#666", fontSize: 12 }}>· {r.raceName}</span>}
                   </div>
-                  <div style={{ color: "#888", fontSize: 12 }}>{r.date}{r.notes && ` · ${r.notes}`}</div>
+                  <div style={{ color: "#aaa", fontSize: 12, fontWeight: 600 }}>{formatDate(r.date)}{r.notes && <span style={{ color: "#555", fontWeight: 400 }}> · {r.notes}</span>}</div>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }} onClick={e => e.stopPropagation()}>
                   <ActionButtons accentColor={col.main} onEdit={() => startEdit(r)} onDelete={() => deleteRun(r.id)} />
@@ -1224,7 +1231,7 @@ function HyroxComparison({ data }) {
   const [raceA, setRaceA] = useState("");
   const [raceB, setRaceB] = useState("");
 
-  const raceLabel = (r) => `${r.eventName ? r.eventName + " — " : ""}${r.date} · ${r.athlete}${r.category !== "Solo" ? ` (${r.category})` : ""}`;
+  const raceLabel = (r) => `${r.eventName ? r.eventName + " — " : ""}${formatDate(r.date)} · ${r.athlete}${r.category !== "Solo" ? ` (${r.category})` : ""}`;
 
   const races = [...data].filter(r => r.totalSecs).sort((a, b) => b.date.localeCompare(a.date));
   const a = races.find(r => String(r.id) === String(raceA));
@@ -1307,7 +1314,7 @@ function HyroxComparison({ data }) {
               {a ? (
                 <div>
                   <div style={{ color: "#fff", fontWeight: 800, fontSize: 13 }}>{a.eventName || a.athlete}</div>
-                  <div style={{ color: "#888", fontSize: 11 }}>{a.date} · {a.athlete}</div>
+                  <div style={{ color: "#888", fontSize: 11 }}>{formatDate(a.date)} · {a.athlete}</div>
                 </div>
               ) : <span style={{ color: "#52525b" }}>—</span>}
             </div>
@@ -1315,7 +1322,7 @@ function HyroxComparison({ data }) {
               {b ? (
                 <div>
                   <div style={{ color: "#fff", fontWeight: 800, fontSize: 13 }}>{b.eventName || b.athlete}</div>
-                  <div style={{ color: "#888", fontSize: 11 }}>{b.date} · {b.athlete}</div>
+                  <div style={{ color: "#888", fontSize: 11 }}>{formatDate(b.date)} · {b.athlete}</div>
                 </div>
               ) : <span style={{ color: "#52525b" }}>—</span>}
             </div>
@@ -1391,7 +1398,7 @@ function HyroxLiveTracker({ data }) {
   const raceLabel = (r) => {
     const cat = r.category && r.category !== "Solo" ? r.category : "Solo";
     const partner = r.partner ? ` · ${r.partner}` : "";
-    return `${r.eventName || r.date} (${cat}${partner})`;
+    return `${r.eventName || formatDate(r.date)} (${cat}${partner})`;
   };
 
   // Chrono coach — on utilise une ref pour startTime pour éviter les problèmes de closure
@@ -1550,7 +1557,7 @@ function HyroxLiveTracker({ data }) {
                       if (!refSecs) return null;
                       return (
                         <div key={r.id} style={{ background: "#27272a", borderRadius: 8, padding: "5px 12px", fontSize: 12 }}>
-                          <span style={{ color: "#71717a" }}>{r.eventName || r.date} · </span>
+                          <span style={{ color: "#71717a" }}>{r.eventName || formatDate(r.date)} · </span>
                           <span style={{ color: col.main, fontWeight: 700 }}>{formatTime(refSecs)}</span>
                         </div>
                       );
@@ -1578,7 +1585,7 @@ function HyroxLiveTracker({ data }) {
                         border: `1px solid ${isAhead ? "#4ade8044" : "#f8717144"}`,
                         borderRadius: 10, padding: "10px 16px", minWidth: 130,
                       }}>
-                        <div style={{ color: "#888", fontSize: 11, marginBottom: 2 }}>{r.eventName || r.date}</div>
+                        <div style={{ color: "#888", fontSize: 11, marginBottom: 2 }}>{r.eventName || formatDate(r.date)}</div>
                         <div style={{ color: "#555", fontSize: 10, marginBottom: 6 }}>
                           {r.category || "Solo"}{r.partner ? ` · ${r.partner}` : ""}
                         </div>
@@ -1650,7 +1657,7 @@ function HyroxLiveTracker({ data }) {
                       <th style={{ padding: "8px 14px", color: col.main, fontWeight: 700, textAlign: "center", fontSize: 11, borderBottom: "1px solid #303036" }}>Mon temps</th>
                       {racesWithCheckpoints.map(r => (
                         <th key={r.id} style={{ padding: "8px 14px", color: "#888", fontWeight: 700, textAlign: "center", fontSize: 11, borderBottom: "1px solid #303036", whiteSpace: "nowrap" }}>
-                          <div>{r.eventName || r.date}</div>
+                          <div>{r.eventName || formatDate(r.date)}</div>
                           <div style={{ color: "#555", fontWeight: 400, fontSize: 10 }}>{r.category || "Solo"}{r.partner ? ` · ${r.partner}` : ""}</div>
                         </th>
                       ))}
@@ -1732,7 +1739,7 @@ function HyroxLiveTracker({ data }) {
                     <div>
                       <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
                         <span style={{ color: "#fff", fontWeight: 700 }}>{race.eventName || race.date}</span>
-                        {race.eventName && <span style={{ color: "#71717a", fontSize: 12 }}>{race.date}</span>}
+                        {race.eventName && <span style={{ color: "#71717a", fontSize: 12 }}>{formatDate(race.date)}</span>}
                       </div>
                       <div style={{ color: "#555", fontSize: 11 }}>{race.category || "Solo"}{race.partner ? ` · ${race.partner}` : ""}</div>
                       <div style={{ color: "#71717a", fontSize: 12, marginTop: 2 }}>
@@ -1760,7 +1767,7 @@ function HyroxLiveTracker({ data }) {
                     <th style={{ padding: "8px 12px", color: "#71717a", fontWeight: 700, textAlign: "left", textTransform: "uppercase", fontSize: 10, letterSpacing: "0.07em", borderBottom: "1px solid #303036" }}>Checkpoint</th>
                     {manualRaces.map(r => (
                       <th key={r.id} style={{ padding: "8px 12px", color: col.main, fontWeight: 700, textAlign: "center", fontSize: 11, borderBottom: "1px solid #303036", whiteSpace: "nowrap" }}>
-                        <div>{r.eventName || r.date}</div>
+                        <div>{r.eventName || formatDate(r.date)}</div>
                         <div style={{ color: "#555", fontWeight: 400, fontSize: 10 }}>{r.category || "Solo"}{r.partner ? ` · ${r.partner}` : ""}</div>
                       </th>
                     ))}
@@ -1829,7 +1836,7 @@ function HyroxRecords({ data, trainingData, templates }) {
                   <div style={{ color: col.main, fontWeight: 900, fontSize: 32 }}>{formatTime(pr.totalSecs)}</div>
                   <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4, flexWrap: "wrap" }}>
                     {pr.eventName && <span style={{ color: "#fff", fontWeight: 700, fontSize: 13 }}>{pr.eventName}</span>}
-                    <span style={{ color: "#71717a", fontSize: 12 }}>{pr.date}</span>
+                    <span style={{ color: "#71717a", fontSize: 12 }}>{formatDate(pr.date)}</span>
                     {pr.category && pr.category !== "Solo" && <Badge color="#888">{pr.category}</Badge>}
                   </div>
                   <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 4 }}>
@@ -1947,7 +1954,7 @@ function HyroxRecords({ data, trainingData, templates }) {
                         <div style={{ padding: "10px 12px" }}><Badge color={col.main}>{entry.athlete}</Badge></div>
                         <div style={{ padding: "10px 12px" }}>
                           <div style={{ color: "#888", fontSize: 12 }}>{entry.label}</div>
-                          <div style={{ color: "#888", fontSize: 11 }}>{entry.mode} · {entry.date}</div>
+                          <div style={{ color: "#888", fontSize: 11 }}>{entry.mode} · {formatDate(entry.date)}</div>
                         </div>
                         <div style={{ padding: "10px 12px", color: i === 0 ? col.main : "#fff", fontWeight: i === 0 ? 800 : 600, fontSize: 14 }}>
                           {formatTime(entry.secs)}{i === 0 && <span style={{ marginLeft: 4, fontSize: 9, color: col.main }}>★</span>}
@@ -1980,7 +1987,7 @@ function HyroxRecords({ data, trainingData, templates }) {
                 <div style={{ color: "#888", fontSize: 12, fontWeight: 700, textTransform: "uppercase", marginBottom: 8 }}>{a}</div>
                 {races.map(r => (
                   <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
-                    <div style={{ color: "#888", fontSize: 12, width: 80 }}>{r.date}</div>
+                    <div style={{ color: "#888", fontSize: 12, width: 80 }}>{formatDate(r.date)}</div>
                     <div style={{ flex: 1, background: "#2a2a2e", borderRadius: 4, height: 8, overflow: "hidden" }}>
                       {r.totalSecs && <div style={{ width: `${(best.totalSecs / r.totalSecs) * 100}%`, height: "100%", background: r.id === best.id ? col.main : col.main + "66", borderRadius: 4 }} />}
                     </div>
@@ -2341,7 +2348,7 @@ function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrain
                         <span style={{ color: "#fff", fontWeight: 700, fontSize: 14 }}>
                           {isCourse ? (r.eventName || "Hyrox") : (tpl?.name || "—")}
                         </span>
-                        <span style={{ color: "#71717a", fontSize: 12 }}>{r.date}</span>
+                        <span style={{ color: "#71717a", fontSize: 12 }}>{formatDate(r.date)}</span>
                       </div>
                       {r.notes && <div style={{ color: "#71717a", fontSize: 12, marginTop: 4 }}>{r.notes}</div>}
                     </div>
@@ -2532,7 +2539,7 @@ function KartingTab({ data, setData }) {
                           {r.bestLap}{i === 0 && <span style={{ marginLeft: 6, fontSize: 10 }}>★</span>}
                         </div>
                         <div style={{ padding: "12px 14px", color: "#666", fontSize: 12 }}>{r.session}</div>
-                        <div style={{ padding: "12px 14px", color: "#888", fontSize: 12 }}>{r.date}</div>
+                        <div style={{ padding: "12px 14px", color: "#888", fontSize: 12 }}>{formatDate(r.date)}</div>
                       </div>
                     );
                   })}
@@ -2705,7 +2712,7 @@ function KartingTab({ data, setData }) {
                 {/* En-tête de journée */}
                 <div style={{ padding: "12px 18px", borderBottom: "1px solid #1a1a1a", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#27272a" }}>
                   <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                    <span style={{ color: "#fff", fontWeight: 800, fontSize: 14 }}>{date}</span>
+                    <span style={{ color: "#fff", fontWeight: 800, fontSize: 14 }}>{formatDate(date)}</span>
                     <span style={{ color: "#888", fontSize: 12 }}>{dayEntries[0]?.circuit || "RKO Angerville"}</span>
                     {athletes.map(a => <Badge key={a} color={col.main}>{a}</Badge>)}
                   </div>
@@ -2902,7 +2909,7 @@ function BodyTab({ data, setData }) {
             <div style={{ background: "#1f1f23", border: `1px solid ${col.border}`, borderRadius: 16, padding: "20px 24px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
                 <div>
-                  <div style={{ color: "#888", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>Dernière mesure · {latest.date}</div>
+                  <div style={{ color: "#888", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>Dernière mesure · {formatDate(latest.date)}</div>
                   {latest.weight && <div style={{ color: "#fff", fontWeight: 900, fontSize: 36, marginTop: 4 }}>{latest.weight} <span style={{ color: "#888", fontSize: 16, fontWeight: 400 }}>kg</span></div>}
                 </div>
                 <ActionButtons accentColor={col.main} onEdit={() => startEdit(latest)} onDelete={() => deleteEntry(latest.id)} />
@@ -2921,7 +2928,7 @@ function BodyTab({ data, setData }) {
           {athleteData.slice(1).map(r => (
             <div key={r.id} style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 12, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
-                <div style={{ color: "#888", fontSize: 12, marginBottom: 4 }}>{r.date}</div>
+                <div style={{ color: "#888", fontSize: 12, marginBottom: 4 }}>{formatDate(r.date)}</div>
                 <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                   {r.weight && <span style={{ color: "#fff", fontWeight: 700, fontSize: 14 }}>{r.weight} kg</span>}
                   {BODY_METRICS.filter(m => r[m.key]).map(m => (
@@ -3411,7 +3418,7 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates, partners, se
                     const acol = ATHLETE_COLORS[r.athlete];
                     return (
                       <div key={r.id} style={{ minWidth: 400, display: "grid", gridTemplateColumns: `100px 80px 90px 80px${tpl ? tpl.segments.map(() => " 90px").join("") : ""}`, borderBottom: i < progressionData.length-1 ? "1px solid #111" : "none", background: i%2===0 ? "#1f1f23" : "#27272a" }}>
-                        <div style={{ padding: "10px 12px", color: "#777", fontSize: 12 }}>{r.date}{isPR && <span style={{ marginLeft: 6, color: col.main, fontSize: 9, fontWeight: 800 }}>★PR</span>}</div>
+                        <div style={{ padding: "10px 12px", color: "#777", fontSize: 12 }}>{formatDate(r.date)}{isPR && <span style={{ marginLeft: 6, color: col.main, fontSize: 9, fontWeight: 800 }}>★PR</span>}</div>
                         <div style={{ padding: "10px 12px" }}><span style={{ color: acol, fontSize: 12, fontWeight: 700 }}>{r.athlete}</span></div>
                         <div style={{ padding: "10px 12px", color: "#fff", fontWeight: 800, fontSize: 13 }}>{r.totalTime}</div>
                         <div style={{ padding: "10px 12px", fontSize: 12, fontWeight: 700, color: diff === null ? "#52525b" : diff < 0 ? "#4ade80" : "#f87171" }}>{diff === null ? "—" : `${diff < 0 ? "▼" : "▲"} ${formatTime(Math.abs(diff))}`}</div>
@@ -3447,7 +3454,7 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates, partners, se
                       <Badge color={col.main}>{r.athlete}</Badge>
                       <span style={{ color: "#fff", fontWeight: 700 }}>{tpl?.name || "—"}</span>
                       {r.trainingPartner && <span style={{ color: "#888", fontSize: 12 }}>avec {r.trainingPartner}</span>}
-                      <span style={{ color: "#888", fontSize: 12 }}>{r.date}</span>
+                      <span style={{ color: "#888", fontSize: 12 }}>{formatDate(r.date)}</span>
                     </div>
                     {r.notes && <div style={{ color: "#888", fontSize: 12 }}>{r.notes}</div>}
                   </div>
@@ -3591,7 +3598,7 @@ function Dashboard({ runData, hyroxData, kartingData, bodyData }) {
                     <span style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>{r.sport}</span>
                     {r.raceName && <span style={{ color: "#888", fontSize: 12 }}>· {r.raceName}</span>}
                   </div>
-                  <div style={{ color: "#888", fontSize: 12, marginTop: 2 }}>{r.date}</div>
+                  <div style={{ color: "#888", fontSize: 12, marginTop: 2 }}>{formatDate(r.date)}</div>
                 </div>
               </div>
               <div style={{ color: col.main, fontWeight: 700, fontSize: 15 }}>
