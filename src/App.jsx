@@ -3927,7 +3927,7 @@ function Dashboard({ runData, hyroxData, kartingData, bodyData, upcomingEvents, 
                 }));
                 const hasEnough = datasets.some(d => d.points.length > 1);
                 if (!hasEnough) return null;
-                return <LineChart key={circuit} title={circuit} datasets={datasets} yFormat={s => `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`} sport="Karting" />;
+                return <LineChart key={circuit} title={circuit} datasets={datasets} yFormat={secsFmt} sport="Karting" />;
               })}
             </div>
           </div>
