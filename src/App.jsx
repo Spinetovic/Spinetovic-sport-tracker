@@ -1410,10 +1410,15 @@ function getHyroxPacingForTarget(targetSecs) {
 }
 
 // ── HYROX LIVE TRACKER ───────────────────────────────────────────────────────
+const MAX_SESSIONS = 3;
+const SESSION_COLORS = ["#00D4FF", "#f472b6", "#4ade80"];
+
+function createSession(name) {
+  return { name, running: false, startTs: null, elapsed: 0, cpIdx: 0, splits: {} };
+}
+
 function HyroxLiveTracker({ data }) {
   const col = SPORT_COLORS["Hyrox"];
-
-  // Modes : "manual" (saisie libre) | "coach" (mode live)
   const [mode, setMode] = useState("coach");
 
   // ── Mode Manuel ──
@@ -1421,124 +1426,137 @@ function HyroxLiveTracker({ data }) {
   const [selectedCheckpoint, setSelectedCheckpoint] = useState("");
   const [manualAthlete, setManualAthlete] = useState(ATHLETES[0]);
 
-  // ── Mode Coach ──
-  const [coachAthlete, setCoachAthlete] = useState(ATHLETES[0]);
-  const [coachRunning, setCoachRunning] = useState(false);
-  const [coachStartTime, setCoachStartTime] = useState(null);
-  const [coachElapsed, setCoachElapsed] = useState(0);
-  const [coachCheckpointIdx, setCoachCheckpointIdx] = useState(0);
-  const [coachSplits, setCoachSplits] = useState({});
+  // ── Mode Coach multi-sessions ──
+  const [sessions, setSessions] = useState([createSession("Session 1")]);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [expandedCp, setExpandedCp] = useState(null);
+  const startTsRefs = useRef([null, null, null]);
   const timerRef = useRef(null);
 
   const allRacesWithCheckpoints = data.filter(r => r.checkpointSecs && Object.keys(r.checkpointSecs).length > 0);
-  const racesWithCheckpoints = allRacesWithCheckpoints.filter(r => r.athlete === coachAthlete);
   const manualRaces = allRacesWithCheckpoints.filter(r => r.athlete === manualAthlete);
 
-  const raceLabel = (r) => {
-    const cat = r.category && r.category !== "Solo" ? r.category : "Solo";
-    const partner = r.partner ? ` · ${r.partner}` : "";
-    return `${r.eventName || formatDate(r.date)} (${cat}${partner})`;
-  };
-
-  // Chrono coach — on utilise une ref pour startTime pour éviter les problèmes de closure
-  const startTimeRef = useRef(null);
-
+  // Tick global — met à jour tous les elapsed
   useEffect(() => {
-    if (coachRunning) {
-      timerRef.current = setInterval(() => {
-        setCoachElapsed(Math.floor((Date.now() - startTimeRef.current) / 1000));
-      }, 250);
-    } else {
-      clearInterval(timerRef.current);
-    }
+    timerRef.current = setInterval(() => {
+      const now = Date.now();
+      setSessions(prev => prev.map((s, i) => {
+        if (!s.running || !startTsRefs.current[i]) return s;
+        return { ...s, elapsed: Math.floor((now - startTsRefs.current[i]) / 1000) };
+      }));
+    }, 250);
     return () => clearInterval(timerRef.current);
-  }, [coachRunning]);
+  }, []);
 
-  const startCoach = () => {
+  const sess = sessions[activeIdx] || sessions[0];
+  const updateSess = (updater) => setSessions(prev => prev.map((s, i) => i === activeIdx ? updater(s) : s));
+
+  const startSession = () => {
     const now = Date.now();
-    startTimeRef.current = now;
-    setCoachStartTime(now);
-    setCoachElapsed(0);
-    setCoachCheckpointIdx(0);
-    setCoachSplits({});
-    setCoachRunning(true);
+    startTsRefs.current[activeIdx] = now;
+    updateSess(s => ({ ...s, running: true, startTs: now, elapsed: 0, cpIdx: 0, splits: {} }));
   };
 
-  const resetCoach = () => {
-    setCoachRunning(false);
-    setCoachElapsed(0);
-    setCoachCheckpointIdx(0);
-    setCoachSplits({});
-    setCoachStartTime(null);
+  const resetSession = () => {
+    startTsRefs.current[activeIdx] = null;
+    updateSess(s => ({ ...s, running: false, elapsed: 0, cpIdx: 0, splits: {}, startTs: null }));
   };
 
   const adjustTime = (deltaSecs) => {
-    // Décaler le startTime pour ajuster le chrono en live
-    if (!coachRunning) return;
-    startTimeRef.current = startTimeRef.current + deltaSecs * 1000;
-    setCoachElapsed(prev => Math.max(0, prev - deltaSecs));
+    if (!sess.running) return;
+    startTsRefs.current[activeIdx] += deltaSecs * 1000;
+    updateSess(s => ({ ...s, elapsed: Math.max(0, s.elapsed - deltaSecs) }));
   };
 
   const validateCheckpoint = () => {
-    if (!coachRunning || coachCheckpointIdx >= HYROX_CHECKPOINTS.length) return;
-    const cp = HYROX_CHECKPOINTS[coachCheckpointIdx];
-    setCoachSplits(prev => ({ ...prev, [cp]: coachElapsed }));
-    setCoachCheckpointIdx(i => i + 1);
+    if (!sess.running || sess.cpIdx >= HYROX_CHECKPOINTS.length) return;
+    const cp = HYROX_CHECKPOINTS[sess.cpIdx];
+    updateSess(s => ({ ...s, splits: { ...s.splits, [cp]: s.elapsed }, cpIdx: s.cpIdx + 1 }));
+    setExpandedCp(null);
   };
 
-  const [expandedCp, setExpandedCp] = useState(null);
+  const addSession = () => {
+    if (sessions.length >= MAX_SESSIONS) return;
+    const idx = sessions.length;
+    setSessions(prev => [...prev, createSession("Session " + (idx + 1))]);
+    setActiveIdx(idx);
+  };
+
+  const removeSession = (idx) => {
+    startTsRefs.current[idx] = null;
+    setSessions(prev => prev.filter((_, i) => i !== idx));
+    setActiveIdx(prev => Math.min(prev, sessions.length - 2));
+  };
 
   const formatElapsed = (secs) => {
     const h = Math.floor(secs / 3600);
     const m = Math.floor((secs % 3600) / 60);
     const s = secs % 60;
-    return `${h > 0 ? h + "h" : ""}${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+    return (h > 0 ? h + "h" : "") + String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
   };
 
   const formatDiff = (diff) => {
     const abs = Math.abs(diff);
     const m = Math.floor(abs / 60);
     const s = abs % 60;
-    const str = m > 0 ? `${m}m${String(s).padStart(2,"0")}s` : `${s}s`;
-    return diff < 0 ? `+${str}` : `-${str}`;
+    const str = m > 0 ? m + "m" + String(s).padStart(2,"0") + "s" : s + "s";
+    return diff < 0 ? "+" + str : "-" + str;
   };
 
-  // Pour un temps validé au checkpoint i, trouver les 2 objectifs les plus proches
-  // et les 10 valeurs autour pour le détail déroulant
   const getPacingContext = (cpIdx, elapsedSecs) => {
-    const MIN_TARGET = 55 * 60; // 55min
-    const MAX_TARGET = 90 * 60; // 1h30
     const results = [];
-    for (let t = MIN_TARGET; t <= MAX_TARGET; t += 60) {
+    for (let t = 55 * 60; t <= 90 * 60; t += 60) {
       const splits = getHyroxPacingForTarget(t);
       const refSecs = splits[cpIdx];
       results.push({ target: t, refSecs, diff: elapsedSecs - refSecs });
     }
-    // Sort by absolute diff
     results.sort((a, b) => Math.abs(a.diff) - Math.abs(b.diff));
-    const closest = results[0];
-    // Bracket: one below, one above
     const below = results.find(r => r.diff > 0) || results[0];
     const above = results.find(r => r.diff <= 0) || results[0];
-    // Top 10 closest for details
     const top10 = results.slice(0, 10).sort((a, b) => a.target - b.target);
     return { below, above, top10 };
   };
 
-  // Pas de course de référence unique — on compare à toutes
-  const lastValidatedIdx = coachCheckpointIdx - 1;
-  const lastCp = lastValidatedIdx >= 0 ? HYROX_CHECKPOINTS[lastValidatedIdx] : null;
-  const nextCp = coachCheckpointIdx < HYROX_CHECKPOINTS.length ? HYROX_CHECKPOINTS[coachCheckpointIdx] : null;
+  const getEstimatedFinish = (lastCp, elapsedAtCp) => {
+    const cpIdx = HYROX_CHECKPOINTS.indexOf(lastCp);
+    if (cpIdx < 0) return null;
+    const pacing = getPacingContext(cpIdx, elapsedAtCp);
+    const { below, above } = pacing;
+    if (below.target === above.target) return below.target;
+    const refRange = below.refSecs - above.refSecs;
+    const myPos = elapsedAtCp - above.refSecs;
+    const t = refRange > 0 ? myPos / refRange : 0.5;
+    return Math.round(above.target + t * (below.target - above.target));
+  };
 
-  // Mode manuel
+  const fmtTarget = (t) => {
+    const h = Math.floor(t / 3600);
+    const m = Math.floor((t % 3600) / 60);
+    return h > 0 ? h + "h" + String(m).padStart(2,"0") : m + "min";
+  };
+
+  const fmtFull = (s) => {
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    return h > 0 ? h + "h" + String(m).padStart(2,"0") + "m" + String(sec).padStart(2,"0") + "s" : m + "m" + String(sec).padStart(2,"0") + "s";
+  };
+
+  const lastCp = sess.cpIdx > 0 ? HYROX_CHECKPOINTS[sess.cpIdx - 1] : null;
+  const nextCp = sess.cpIdx < HYROX_CHECKPOINTS.length ? HYROX_CHECKPOINTS[sess.cpIdx] : null;
+  const sessColor = SESSION_COLORS[activeIdx % SESSION_COLORS.length];
+
+  // Races matching this session name (if it's an athlete name)
+  const racesForSess = allRacesWithCheckpoints.filter(r => r.athlete === sess.name);
+
   const currentSecs = parseTimeInput(currentTime);
   const formatDiffManual = (diff) => {
     const abs = Math.abs(diff);
     const h = Math.floor(abs / 3600);
     const m = Math.floor((abs % 3600) / 60);
     const s = abs % 60;
-    const str = h > 0 ? `${h}h${String(m).padStart(2,"0")}m${String(s).padStart(2,"0")}s` : `${m}m${String(s).padStart(2,"0")}s`;
-    return diff < 0 ? `▲ ${str} d'avance` : `▼ ${str} de retard`;
+    const str = h > 0 ? h + "h" + String(m).padStart(2,"0") + "m" + String(s).padStart(2,"0") + "s" : m + "m" + String(s).padStart(2,"0") + "s";
+    return diff < 0 ? "▲ " + str + " d'avance" : "▼ " + str + " de retard";
   };
 
   return (
@@ -1560,174 +1578,159 @@ function HyroxLiveTracker({ data }) {
       {mode === "coach" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-          {/* Sélection athlète */}
-          {!coachRunning && (
+          {/* Onglets sessions */}
+          <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+            {sessions.map((s, i) => {
+              const sCol = SESSION_COLORS[i % SESSION_COLORS.length];
+              const isActive = i === activeIdx;
+              const hasAlert = s.running && HYROX_CHECKPOINTS[s.cpIdx];
+              return (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 0 }}>
+                  <button onClick={() => { setActiveIdx(i); setExpandedCp(null); }} style={{
+                    padding: "8px 16px", borderRadius: sessions.length > 1 ? "8px 0 0 8px" : 10,
+                    border: "1.5px solid " + (isActive ? sCol : "#303036"),
+                    borderRight: sessions.length > 1 ? "none" : "1.5px solid " + (isActive ? sCol : "#303036"),
+                    background: isActive ? sCol + "22" : "transparent",
+                    color: isActive ? sCol : "#888",
+                    fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit",
+                    position: "relative",
+                  }}>
+                    {s.running && <span style={{ position: "absolute", top: 4, right: sessions.length > 1 ? 18 : 6, width: 6, height: 6, borderRadius: "50%", background: sCol }} />}
+                    {s.name}
+                    {s.running && " · " + formatElapsed(s.elapsed)}
+                  </button>
+                  {sessions.length > 1 && (
+                    <button onClick={() => removeSession(i)} style={{
+                      padding: "8px 8px", borderRadius: "0 8px 8px 0",
+                      border: "1.5px solid " + (isActive ? sCol : "#303036"),
+                      background: isActive ? sCol + "11" : "transparent",
+                      color: "#52525b", fontSize: 14, cursor: "pointer", fontFamily: "inherit",
+                    }}>×</button>
+                  )}
+                </div>
+              );
+            })}
+            {sessions.length < MAX_SESSIONS && (
+              <button onClick={addSession} style={{
+                padding: "8px 14px", borderRadius: 8,
+                border: "1.5px solid #303036", background: "transparent",
+                color: "#52525b", fontWeight: 700, fontSize: 13,
+                cursor: "pointer", fontFamily: "inherit",
+              }}>+ Session</button>
+            )}
+          </div>
+
+          {/* Config session (nom) si pas encore démarrée */}
+          {!sess.running && sess.cpIdx === 0 && (
             <div style={{ background: "#1f1f23", border: "1px solid #303036", borderRadius: 14, padding: "16px 20px" }}>
-              <div style={{ color: "#888", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Qui participe ?</div>
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ color: "#888", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Nom de la session</div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
                 {ATHLETES.map(a => (
-                  <button key={a} onClick={() => setCoachAthlete(a)} style={{
-                    padding: "10px 28px", borderRadius: 10, border: `2px solid ${coachAthlete === a ? col.main : "#303036"}`,
-                    background: coachAthlete === a ? col.main + "22" : "transparent",
-                    color: coachAthlete === a ? col.main : "#888",
-                    fontWeight: 800, fontSize: 15, cursor: "pointer", fontFamily: "inherit",
+                  <button key={a} onClick={() => updateSess(s => ({ ...s, name: a }))} style={{
+                    padding: "8px 20px", borderRadius: 10,
+                    border: "1.5px solid " + (sess.name === a ? sessColor : "#303036"),
+                    background: sess.name === a ? sessColor + "22" : "transparent",
+                    color: sess.name === a ? sessColor : "#888",
+                    fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit",
                   }}>{a}</button>
                 ))}
+                <input
+                  value={ATHLETES.includes(sess.name) ? "" : sess.name}
+                  onChange={e => updateSess(s => ({ ...s, name: e.target.value || s.name }))}
+                  placeholder="Autre nom…"
+                  style={{ background: "#27272a", border: "1.5px solid " + (!ATHLETES.includes(sess.name) ? sessColor : "#303036"), borderRadius: 10, padding: "8px 14px", color: "#fff", fontSize: 14, outline: "none", fontFamily: "inherit", minWidth: 120 }}
+                />
               </div>
-              {racesWithCheckpoints.length === 0 && (
-                <div style={{ color: "#52525b", fontSize: 12, marginTop: 10 }}>
-                  Aucune course avec temps de passage pour {coachAthlete}.
-                </div>
-              )}
-              {racesWithCheckpoints.length > 0 && (
-                <div style={{ color: "#71717a", fontSize: 12, marginTop: 10 }}>
-                  {racesWithCheckpoints.length} course{racesWithCheckpoints.length > 1 ? "s" : ""} de référence : {racesWithCheckpoints.map(r => raceLabel(r)).join(", ")}
-                </div>
-              )}
-            </div>
-          )}
-
-          {coachRunning && (
-            <div style={{ background: "#1f1f23", border: `1px solid ${col.border}`, borderRadius: 10, padding: "10px 16px", display: "flex", alignItems: "center", gap: 10 }}>
-              <Badge color={col.main}>{coachAthlete}</Badge>
-              <span style={{ color: "#71717a", fontSize: 12 }}>
-                Comparé à {racesWithCheckpoints.length} course{racesWithCheckpoints.length > 1 ? "s" : ""}
-              </span>
             </div>
           )}
 
           {/* Chrono principal */}
           <div style={{
-            background: "#1f1f23", border: `2px solid ${coachRunning ? col.main : "#303036"}`,
-            borderRadius: 20, padding: "28px 24px", textAlign: "center",
-            transition: "border-color 0.3s",
+            background: "#1f1f23", border: "2px solid " + (sess.running ? sessColor : "#303036"),
+            borderRadius: 20, padding: "24px 20px", textAlign: "center", transition: "border-color 0.3s",
           }}>
+            {/* Nom athlète */}
+            {sess.running && (
+              <div style={{ color: sessColor, fontWeight: 700, fontSize: 13, marginBottom: 6 }}>{sess.name}</div>
+            )}
+
             {/* Chrono */}
-            <div style={{
-              fontFamily: "monospace", fontSize: 56, fontWeight: 900,
-              color: coachRunning ? col.main : "#52525b",
-              letterSpacing: "0.04em", marginBottom: 8,
-              textShadow: coachRunning ? `0 0 30px ${col.main}44` : "none",
-              transition: "color 0.3s",
-            }}>
-              {formatElapsed(coachElapsed)}
+            <div style={{ fontFamily: "monospace", fontSize: 56, fontWeight: 900, color: sess.running ? sessColor : "#52525b", letterSpacing: "0.04em", marginBottom: 4, textShadow: sess.running ? "0 0 30px " + sessColor + "44" : "none" }}>
+              {formatElapsed(sess.elapsed)}
             </div>
 
-            {/* Prochain checkpoint + temps de référence de toutes les courses */}
-            {coachRunning && nextCp && (
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ color: "#71717a", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
-                  Prochain checkpoint
+            {/* Temps final estimé */}
+            {sess.running && lastCp && sess.splits[lastCp] && (() => {
+              const est = getEstimatedFinish(lastCp, sess.splits[lastCp]);
+              if (!est) return null;
+              return (
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ color: "#52525b", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 3 }}>Temps final estimé</div>
+                  <div style={{ color: "#fff", fontWeight: 900, fontSize: 26, fontFamily: "monospace" }}>{fmtFull(est)}</div>
+                  <div style={{ color: "#52525b", fontSize: 10 }}>basé sur {lastCp}</div>
                 </div>
-                <div style={{ color: "#fff", fontWeight: 700, fontSize: 20, marginBottom: 10 }}>{nextCp}</div>
-                {racesWithCheckpoints.filter(r => r.checkpointSecs?.[nextCp]).length > 0 && (
-                  <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
-                    {racesWithCheckpoints.map(r => {
-                      const refSecs = r.checkpointSecs?.[nextCp];
-                      if (!refSecs) return null;
-                      return (
-                        <div key={r.id} style={{ background: "#27272a", borderRadius: 8, padding: "5px 12px", fontSize: 12 }}>
-                          <span style={{ color: "#71717a" }}>{r.eventName || formatDate(r.date)} · </span>
-                          <span style={{ color: col.main, fontWeight: 700 }}>{formatTime(refSecs)}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+              );
+            })()}
+
+            {/* Prochain checkpoint */}
+            {sess.running && nextCp && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ color: "#71717a", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>Prochain checkpoint</div>
+                <div style={{ color: "#fff", fontWeight: 700, fontSize: 18 }}>{nextCp}</div>
               </div>
             )}
 
-            {/* Comparaison dernier checkpoint — toutes les courses */}
-            {lastCp && coachSplits[lastCp] && racesWithCheckpoints.length > 0 && (
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ color: "#71717a", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>
-                  {lastCp} — {formatElapsed(coachSplits[lastCp])}
-                </div>
-                <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
-                  {racesWithCheckpoints.map(r => {
-                    const refSecs = r.checkpointSecs?.[lastCp];
-                    if (!refSecs) return null;
-                    const diff = coachSplits[lastCp] - refSecs;
-                    const isAhead = diff < 0;
-                    return (
-                      <div key={r.id} style={{
-                        background: isAhead ? "#4ade8022" : "#f8717122",
-                        border: `1px solid ${isAhead ? "#4ade8044" : "#f8717144"}`,
-                        borderRadius: 10, padding: "10px 16px", minWidth: 130,
-                      }}>
-                        <div style={{ color: "#888", fontSize: 11, marginBottom: 2 }}>{r.eventName || formatDate(r.date)}</div>
-                        <div style={{ color: "#555", fontSize: 10, marginBottom: 6 }}>
-                          {r.category || "Solo"}{r.partner ? ` · ${r.partner}` : ""}
-                        </div>
-                        <div style={{ color: isAhead ? "#4ade80" : "#f87171", fontWeight: 900, fontSize: 22 }}>
-                          {formatDiff(diff)}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+            {/* Comparaison dernier checkpoint */}
+            {lastCp && sess.splits[lastCp] && racesForSess.length > 0 && (
+              <div style={{ marginBottom: 16, display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+                {racesForSess.map(r => {
+                  const refSecs = r.checkpointSecs?.[lastCp];
+                  if (!refSecs) return null;
+                  const diff = sess.splits[lastCp] - refSecs;
+                  const isAhead = diff < 0;
+                  return (
+                    <div key={r.id} style={{ background: isAhead ? "#4ade8022" : "#f8717122", border: "1px solid " + (isAhead ? "#4ade8044" : "#f8717144"), borderRadius: 10, padding: "8px 14px" }}>
+                      <div style={{ color: "#888", fontSize: 10 }}>{r.eventName || formatDate(r.date)}</div>
+                      <div style={{ color: isAhead ? "#4ade80" : "#f87171", fontWeight: 900, fontSize: 20 }}>{formatDiff(diff)}</div>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
             {/* Fin de course */}
-            {coachRunning && !nextCp && (
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ color: "#4ade80", fontWeight: 900, fontSize: 24 }}>🏁 Course terminée !</div>
+            {sess.running && !nextCp && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ color: "#4ade80", fontWeight: 900, fontSize: 22 }}>🏁 Course terminée !</div>
               </div>
             )}
 
             {/* Boutons */}
-            <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-              {!coachRunning ? (
-                <button onClick={startCoach} style={{
-                  padding: "16px 40px", borderRadius: 14, border: "none",
-                  background: col.main, color: "#000",
-                  fontWeight: 900, fontSize: 18, cursor: "pointer",
-                  fontFamily: "inherit", letterSpacing: "0.02em",
-                }}>
+            <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+              {!sess.running ? (
+                <button onClick={startSession} style={{ padding: "14px 36px", borderRadius: 14, border: "none", background: sessColor, color: "#000", fontWeight: 900, fontSize: 18, cursor: "pointer", fontFamily: "inherit" }}>
                   ▶ Démarrer
                 </button>
               ) : (
                 <>
                   {nextCp && (
-                    <button onClick={validateCheckpoint} style={{
-                      padding: "18px 0", width: "100%", maxWidth: 360,
-                      borderRadius: 14, border: "none",
-                      background: col.main, color: "#000",
-                      fontWeight: 900, fontSize: 20, cursor: "pointer",
-                      fontFamily: "inherit", letterSpacing: "0.02em",
-                      boxShadow: `0 4px 24px ${col.main}44`,
-                    }}>
+                    <button onClick={validateCheckpoint} style={{ padding: "16px 0", width: "100%", maxWidth: 340, borderRadius: 14, border: "none", background: sessColor, color: "#000", fontWeight: 900, fontSize: 18, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 4px 20px " + sessColor + "44" }}>
                       ✓ {nextCp}
                     </button>
                   )}
-                  {/* Jauge d'ajustement */}
-                  <div style={{ width: "100%", maxWidth: 360 }}>
+                  {/* Ajustement chrono */}
+                  <div style={{ width: "100%", maxWidth: 340 }}>
                     <div style={{ color: "#52525b", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.07em", textAlign: "center", marginBottom: 6 }}>Ajuster le chrono</div>
-                    <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
-                      {[[-60, "−1min"], [-30, "−30s"], [-10, "−10s"], [-5, "−5s"]].map(([d, label]) => (
-                        <button key={d} onClick={() => adjustTime(d)} style={{
-                          flex: 1, padding: "8px 0", borderRadius: 8,
-                          border: "1px solid #f8717144", background: "#f8717111",
-                          color: "#f87171", fontWeight: 700, fontSize: 11,
-                          cursor: "pointer", fontFamily: "inherit",
-                        }}>{label}</button>
+                    <div style={{ display: "flex", gap: 4, justifyContent: "center" }}>
+                      {[[-60,"−1m"],[-30,"−30s"],[-10,"−10s"],[-5,"−5s"]].map(([d,l]) => (
+                        <button key={d} onClick={() => adjustTime(d)} style={{ flex: 1, padding: "7px 0", borderRadius: 7, border: "1px solid #f8717144", background: "#f8717111", color: "#f87171", fontWeight: 700, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>{l}</button>
                       ))}
-                      {[[5, "+5s"], [10, "+10s"], [30, "+30s"], [60, "+1min"]].map(([d, label]) => (
-                        <button key={d} onClick={() => adjustTime(d)} style={{
-                          flex: 1, padding: "8px 0", borderRadius: 8,
-                          border: "1px solid #4ade8044", background: "#4ade8011",
-                          color: "#4ade80", fontWeight: 700, fontSize: 11,
-                          cursor: "pointer", fontFamily: "inherit",
-                        }}>{label}</button>
+                      {[[5,"+5s"],[10,"+10s"],[30,"+30s"],[60,"+1m"]].map(([d,l]) => (
+                        <button key={d} onClick={() => adjustTime(d)} style={{ flex: 1, padding: "7px 0", borderRadius: 7, border: "1px solid #4ade8044", background: "#4ade8011", color: "#4ade80", fontWeight: 700, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>{l}</button>
                       ))}
                     </div>
                   </div>
-                  <button onClick={resetCoach} style={{
-                    padding: "12px 24px", borderRadius: 12, border: "1px solid #3f3f46",
-                    background: "transparent", color: "#888",
-                    fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit",
-                  }}>
+                  <button onClick={resetSession} style={{ padding: "10px 20px", borderRadius: 12, border: "1px solid #3f3f46", background: "transparent", color: "#888", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
                     ✕ Arrêter
                   </button>
                 </>
@@ -1735,77 +1738,52 @@ function HyroxLiveTracker({ data }) {
             </div>
           </div>
 
-          {/* Historique des checkpoints validés */}
-          {Object.keys(coachSplits).length > 0 && (
+          {/* Checkpoints validés */}
+          {Object.keys(sess.splits).length > 0 && (
             <div style={{ background: "#1f1f23", border: "1px solid #303036", borderRadius: 14, overflow: "hidden" }}>
               <div style={{ padding: "12px 20px", borderBottom: "1px solid #303036", color: "#fff", fontWeight: 700, fontSize: 13 }}>
-                Checkpoints validés
+                Checkpoints validés — {sess.name}
               </div>
-              {Object.entries(coachSplits).map(([cp, secs], i) => {
+              {Object.entries(sess.splits).map(([cp, secs], i) => {
                 const cpIdx = HYROX_CHECKPOINTS.indexOf(cp);
                 const pacing = cpIdx >= 0 ? getPacingContext(cpIdx, secs) : null;
                 const isExpanded = expandedCp === cp;
-                const fmtTarget = (t) => {
-                  const h = Math.floor(t / 3600);
-                  const m = Math.floor((t % 3600) / 60);
-                  return h > 0 ? h + "h" + String(m).padStart(2, "0") : m + "min";
-                };
                 return (
                   <div key={cp} style={{ borderBottom: "1px solid #2a2a2e", background: i % 2 === 0 ? "#1f1f23" : "#27272a" }}>
-                    {/* Ligne principale */}
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", flexWrap: "wrap", gap: 8 }}>
                       <div>
                         <div style={{ color: "#888", fontSize: 12 }}>{cp}</div>
                         <div style={{ color: "#fff", fontWeight: 700, fontFamily: "monospace", fontSize: 15, marginTop: 2 }}>{formatElapsed(secs)}</div>
                       </div>
                       {pacing && (
-                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                          {/* Valeur en dessous (en retard sur cet objectif) */}
-                          <div style={{ textAlign: "center", background: "#f8717122", border: "1px solid #f8717144", borderRadius: 8, padding: "6px 12px" }}>
-                            <div style={{ color: "#71717a", fontSize: 9, textTransform: "uppercase", marginBottom: 2 }}>en dessous</div>
-                            <div style={{ color: "#f87171", fontWeight: 800, fontSize: 14 }}>{fmtTarget(pacing.below.target)}</div>
-                            <div style={{ color: "#f87171", fontSize: 10 }}>+{formatDiff(Math.abs(pacing.below.diff))}</div>
+                        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                          <div style={{ textAlign: "center", background: "#f8717122", border: "1px solid #f8717144", borderRadius: 8, padding: "5px 10px" }}>
+                            <div style={{ color: "#71717a", fontSize: 9, textTransform: "uppercase", marginBottom: 1 }}>en dessous</div>
+                            <div style={{ color: "#f87171", fontWeight: 800, fontSize: 13 }}>{fmtTarget(pacing.below.target)}</div>
+                            <div style={{ color: "#f87171", fontSize: 10 }}>+{formatElapsed(Math.abs(pacing.below.diff))}</div>
                           </div>
-                          {/* Valeur au dessus (en avance sur cet objectif) */}
-                          <div style={{ textAlign: "center", background: "#4ade8022", border: "1px solid #4ade8044", borderRadius: 8, padding: "6px 12px" }}>
-                            <div style={{ color: "#71717a", fontSize: 9, textTransform: "uppercase", marginBottom: 2 }}>au dessus</div>
-                            <div style={{ color: "#4ade80", fontWeight: 800, fontSize: 14 }}>{fmtTarget(pacing.above.target)}</div>
-                            <div style={{ color: "#4ade80", fontSize: 10 }}>-{formatDiff(Math.abs(pacing.above.diff))}</div>
+                          <div style={{ textAlign: "center", background: "#4ade8022", border: "1px solid #4ade8044", borderRadius: 8, padding: "5px 10px" }}>
+                            <div style={{ color: "#71717a", fontSize: 9, textTransform: "uppercase", marginBottom: 1 }}>au dessus</div>
+                            <div style={{ color: "#4ade80", fontWeight: 800, fontSize: 13 }}>{fmtTarget(pacing.above.target)}</div>
+                            <div style={{ color: "#4ade80", fontSize: 10 }}>-{formatElapsed(Math.abs(pacing.above.diff))}</div>
                           </div>
-                          {/* Bouton déroulant */}
-                          <button onClick={() => setExpandedCp(isExpanded ? null : cp)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #3f3f46", background: "transparent", color: "#888", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <button onClick={() => setExpandedCp(isExpanded ? null : cp)} style={{ width: 26, height: 26, borderRadius: 6, border: "1px solid #3f3f46", background: "transparent", color: "#888", fontSize: 11, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                             {isExpanded ? "▲" : "▼"}
                           </button>
                         </div>
                       )}
-                      {/* Comparaison avec courses réelles */}
-                      {racesWithCheckpoints.length > 0 && (
-                        <div style={{ display: "flex", gap: 8, marginLeft: 8 }}>
-                          {racesWithCheckpoints.map(r => {
-                            const refSecs = r.checkpointSecs?.[cp];
-                            const diff = refSecs ? secs - refSecs : null;
-                            return diff !== null ? (
-                              <div key={r.id} style={{ textAlign: "center" }}>
-                                <div style={{ color: "#555", fontSize: 9 }}>{r.eventName || formatDate(r.date)}</div>
-                                <div style={{ color: diff < 0 ? "#4ade80" : "#f87171", fontWeight: 700, fontSize: 12 }}>{formatDiff(diff)}</div>
-                              </div>
-                            ) : null;
-                          })}
-                        </div>
-                      )}
                     </div>
-                    {/* Détail déroulant — 10 valeurs */}
                     {isExpanded && pacing && (
                       <div style={{ padding: "0 16px 12px", borderTop: "1px solid #303036" }}>
-                        <div style={{ color: "#71717a", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.07em", padding: "10px 0 6px" }}>Référence complète</div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        <div style={{ color: "#71717a", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.07em", padding: "8px 0 6px" }}>10 références les plus proches</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                           {pacing.top10.map(({ target, refSecs: ref, diff }) => {
                             const isBelow = diff > 0;
                             const isClosest = Math.abs(diff) === Math.min(...pacing.top10.map(x => Math.abs(x.diff)));
                             return (
-                              <div key={target} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 10px", borderRadius: 6, background: isClosest ? col.main + "15" : "transparent", border: isClosest ? "1px solid " + col.main + "33" : "1px solid transparent" }}>
+                              <div key={target} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 10px", borderRadius: 6, background: isClosest ? sessColor + "15" : "transparent", border: isClosest ? "1px solid " + sessColor + "33" : "1px solid transparent" }}>
                                 <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                                  <span style={{ color: isClosest ? col.main : "#888", fontWeight: isClosest ? 800 : 600, fontSize: 13, minWidth: 48 }}>{fmtTarget(target)}</span>
+                                  <span style={{ color: isClosest ? sessColor : "#888", fontWeight: isClosest ? 800 : 600, fontSize: 13, minWidth: 44 }}>{fmtTarget(target)}</span>
                                   <span style={{ color: "#52525b", fontSize: 11, fontFamily: "monospace" }}>réf: {formatElapsed(ref)}</span>
                                 </div>
                                 <span style={{ color: isBelow ? "#f87171" : "#4ade80", fontWeight: 700, fontSize: 12 }}>
@@ -1827,39 +1805,26 @@ function HyroxLiveTracker({ data }) {
 
       {/* ── MODE MANUEL ── */}
       {mode === "manual" && (
-        <div style={{ background: "#1f1f23", border: `1px solid ${col.border}`, borderRadius: 14, padding: "20px 24px" }}>
+        <div style={{ background: "#1f1f23", border: "1px solid " + col.border, borderRadius: 14, padding: "20px 24px" }}>
           <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
             {ATHLETES.map(a => (
-              <button key={a} onClick={() => setManualAthlete(a)} style={{
-                padding: "8px 22px", borderRadius: 10, border: `2px solid ${manualAthlete === a ? col.main : "#303036"}`,
-                background: manualAthlete === a ? col.main + "22" : "transparent",
-                color: manualAthlete === a ? col.main : "#888",
-                fontWeight: 800, fontSize: 14, cursor: "pointer", fontFamily: "inherit",
-              }}>{a}</button>
+              <button key={a} onClick={() => setManualAthlete(a)} style={{ padding: "8px 22px", borderRadius: 10, border: "2px solid " + (manualAthlete === a ? col.main : "#303036"), background: manualAthlete === a ? col.main + "22" : "transparent", color: manualAthlete === a ? col.main : "#888", fontWeight: 800, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>{a}</button>
             ))}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <label style={{ color: "#888", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>Temps actuel</label>
-              <input value={currentTime} onChange={e => setCurrentTime(e.target.value)} placeholder="hh:mm:ss"
-                style={{ background: "#27272a", border: `1px solid ${col.main}55`, borderRadius: 8, padding: "10px 14px", color: "#fff", fontSize: 18, fontWeight: 700, outline: "none", fontFamily: "inherit" }} />
+              <input value={currentTime} onChange={e => setCurrentTime(e.target.value)} placeholder="hh:mm:ss" style={{ background: "#27272a", border: "1px solid " + col.main + "55", borderRadius: 8, padding: "10px 14px", color: "#fff", fontSize: 18, fontWeight: 700, outline: "none", fontFamily: "inherit" }} />
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <label style={{ color: "#888", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>Checkpoint</label>
-              <select value={selectedCheckpoint} onChange={e => setSelectedCheckpoint(e.target.value)}
-                style={{ background: "#27272a", border: "1px solid #3f3f46", borderRadius: 8, padding: "10px 14px", color: selectedCheckpoint ? "#fff" : "#888", fontSize: 14, outline: "none", fontFamily: "inherit", cursor: "pointer" }}>
+              <select value={selectedCheckpoint} onChange={e => setSelectedCheckpoint(e.target.value)} style={{ background: "#27272a", border: "1px solid #3f3f46", borderRadius: 8, padding: "10px 14px", color: selectedCheckpoint ? "#fff" : "#888", fontSize: 14, outline: "none", fontFamily: "inherit", cursor: "pointer" }}>
                 <option value="">Choisir…</option>
                 {HYROX_CHECKPOINTS.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
           </div>
-
-          {manualRaces.length === 0 && (
-            <div style={{ color: "#52525b", textAlign: "center", padding: 24, fontSize: 13 }}>
-              Aucune course avec temps de passage pour {manualAthlete}.
-            </div>
-          )}
-
+          {manualRaces.length === 0 && <div style={{ color: "#52525b", textAlign: "center", padding: 24, fontSize: 13 }}>Aucune course avec temps de passage pour {manualAthlete}.</div>}
           {manualRaces.length > 0 && currentSecs && selectedCheckpoint && (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {manualRaces.sort((a, b) => (a.date || "").localeCompare(b.date || "")).map(race => {
@@ -1869,17 +1834,11 @@ function HyroxLiveTracker({ data }) {
                 const isAhead = diff < 0;
                 const diffColor = isAhead ? "#4ade80" : "#f87171";
                 return (
-                  <div key={race.id} style={{ background: "#27272a", border: `1px solid ${diffColor}44`, borderRadius: 12, padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div key={race.id} style={{ background: "#27272a", border: "1px solid " + diffColor + "44", borderRadius: 12, padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
-                        <span style={{ color: "#fff", fontWeight: 700 }}>{race.eventName || race.date}</span>
-                        {race.eventName && <span style={{ color: "#71717a", fontSize: 12 }}>{formatDate(race.date)}</span>}
-                      </div>
-                      <div style={{ color: "#555", fontSize: 11 }}>{race.category || "Solo"}{race.partner ? ` · ${race.partner}` : ""}</div>
-                      <div style={{ color: "#71717a", fontSize: 12, marginTop: 2 }}>
-                        Réf : <span style={{ color: "#aaa", fontWeight: 600 }}>{formatTime(refSecs)}</span>
-                        {race.totalSecs && <span style={{ marginLeft: 10 }}>Final : <span style={{ color: col.main, fontWeight: 600 }}>{formatTime(race.totalSecs)}</span></span>}
-                      </div>
+                      <div style={{ color: "#fff", fontWeight: 700 }}>{race.eventName || formatDate(race.date)}</div>
+                      <div style={{ color: "#555", fontSize: 11 }}>{race.category || "Solo"}{race.partner ? " · " + race.partner : ""}</div>
+                      <div style={{ color: "#71717a", fontSize: 12, marginTop: 2 }}>Réf : <span style={{ color: "#aaa", fontWeight: 600 }}>{formatTime(refSecs)}</span></div>
                     </div>
                     <div style={{ textAlign: "right" }}>
                       <div style={{ color: diffColor, fontWeight: 900, fontSize: 22 }}>{isAhead ? "▲" : "▼"}</div>
@@ -1888,40 +1847,6 @@ function HyroxLiveTracker({ data }) {
                   </div>
                 );
               })}
-            </div>
-          )}
-
-          {/* Tableau de référence */}
-          {manualRaces.length > 0 && (
-            <div style={{ marginTop: 24, overflowX: "auto" }}>
-              <div style={{ color: "#fff", fontWeight: 700, fontSize: 13, marginBottom: 12 }}>Tableau de référence</div>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, minWidth: 400 }}>
-                <thead>
-                  <tr style={{ background: "#27272a" }}>
-                    <th style={{ padding: "8px 12px", color: "#71717a", fontWeight: 700, textAlign: "left", textTransform: "uppercase", fontSize: 10, letterSpacing: "0.07em", borderBottom: "1px solid #303036" }}>Checkpoint</th>
-                    {manualRaces.map(r => (
-                      <th key={r.id} style={{ padding: "8px 12px", color: col.main, fontWeight: 700, textAlign: "center", fontSize: 11, borderBottom: "1px solid #303036", whiteSpace: "nowrap" }}>
-                        <div>{r.eventName || formatDate(r.date)}</div>
-                        <div style={{ color: "#555", fontWeight: 400, fontSize: 10 }}>{r.category || "Solo"}{r.partner ? ` · ${r.partner}` : ""}</div>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {HYROX_CHECKPOINTS.map((cp, i) => {
-                    const isSelected = cp === selectedCheckpoint;
-                    return (
-                      <tr key={cp} onClick={() => setSelectedCheckpoint(cp)} style={{ background: isSelected ? col.main + "15" : i % 2 === 0 ? "#1f1f23" : "#27272a", cursor: "pointer", borderLeft: isSelected ? `3px solid ${col.main}` : "3px solid transparent" }}>
-                        <td style={{ padding: "8px 12px", color: isSelected ? col.main : "#888", fontWeight: isSelected ? 700 : 400, borderBottom: "1px solid #303036", whiteSpace: "nowrap" }}>{cp}</td>
-                        {manualRaces.map(r => {
-                          const secs = r.checkpointSecs?.[cp];
-                          return <td key={r.id} style={{ padding: "8px 12px", color: secs ? "#fff" : "#3f3f46", textAlign: "center", fontWeight: 600, borderBottom: "1px solid #303036", fontFamily: "monospace" }}>{secs ? formatTime(secs) : "—"}</td>;
-                        })}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
             </div>
           )}
         </div>
