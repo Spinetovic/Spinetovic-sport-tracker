@@ -552,9 +552,12 @@ function Textarea({ label, value, onChange }) {
 // ── RUNNING RECORDS ───────────────────────────────────────────────────────────
 function RunningRecords({ data }) {
   const col = SPORT_COLORS["Course à pied"];
-  const [view, setView] = useState("PRs"); // "PRs" | "Progression"
+  const [view, setView] = useState("PRs");
   const [selectedRace, setSelectedRace] = useState("");
   const [selectedRaceNames, setSelectedRaceNames] = useState(null);
+  const [showTotal, setShowTotal] = useState(true);
+  const [showGender, setShowGender] = useState(true);
+  const [tooltip, setTooltip] = useState(null); // { x, y, content }
 
   const getPR = (athlete, distance) => {
     const runs = data.filter(r => r.athlete === athlete && r.distance === distance && r.secs);
@@ -562,7 +565,6 @@ function RunningRecords({ data }) {
     return runs.reduce((best, r) => r.secs < best.secs ? r : best);
   };
 
-  // Toutes les courses nommées ou distances ayant au moins 2 entrées combinées
   const raceOptions = [
     ...new Set(data.filter(r => r.raceName).map(r => r.raceName)),
     ...RUNNING_PR_DISTANCES.filter(d => data.filter(r => r.distance === d).length >= 2),
@@ -574,12 +576,137 @@ function RunningRecords({ data }) {
   };
 
   const ATHLETE_COLORS = { [ATHLETES[0]]: col.main, [ATHLETES[1]]: "#fff" };
+  const DASH_STYLES = { total: "none", gender: "5,3" };
+
+  // Points de classement : toutes les courses ayant un rang
+  const rankingPoints = ATHLETES.flatMap(athlete => {
+    const runs = data
+      .filter(r => r.athlete === athlete && r.date && (
+        (r.rankOverall && r.totalOverall) || (r.rankGender && r.totalGender)
+      ))
+      .sort((a, b) => a.date.localeCompare(b.date));
+    return runs.map(r => ({
+      athlete,
+      date: r.date,
+      raceName: r.raceName || r.distance || "Course",
+      distance: r.distance,
+      pctTotal: r.rankOverall && r.totalOverall ? parseFloat(((parseInt(r.rankOverall) / parseInt(r.totalOverall)) * 100).toFixed(1)) : null,
+      pctGender: r.rankGender && r.totalGender ? parseFloat(((parseInt(r.rankGender) / parseInt(r.totalGender)) * 100).toFixed(1)) : null,
+      rankOverall: r.rankOverall, totalOverall: r.totalOverall,
+      rankGender: r.rankGender, totalGender: r.totalGender,
+    }));
+  });
+
+  // SVG ranking chart
+  const RankingChart = () => {
+    const W = 560, H = 220;
+    const PAD = { top: 20, right: 20, bottom: 36, left: 44 };
+    const cW = W - PAD.left - PAD.right;
+    const cH = H - PAD.top - PAD.bottom;
+
+    const allDates = [...new Set(rankingPoints.map(p => p.date))].sort();
+    if (allDates.length < 1) return (
+      <div style={{ color: "#52525b", textAlign: "center", padding: 40, fontSize: 13 }}>
+        Aucune course avec classement enregistrée.
+      </div>
+    );
+
+    const minX = new Date(allDates[0]).getTime();
+    const maxX = new Date(allDates[allDates.length - 1]).getTime();
+    const rangeX = maxX - minX || 1;
+    // Y: 0% en haut (meilleur), 100% en bas (pire)
+    const svgX = (d) => PAD.left + ((new Date(d).getTime() - minX) / rangeX) * cW;
+    const svgY = (pct) => PAD.top + (pct / 100) * cH;
+
+    // Build series per athlete × type
+    const series = [];
+    ATHLETES.forEach(athlete => {
+      const pts = rankingPoints.filter(p => p.athlete === athlete);
+      if (showTotal) {
+        const tPts = pts.filter(p => p.pctTotal !== null);
+        if (tPts.length) series.push({ athlete, type: "total", pts: tPts, dash: "none", label: athlete + " (général)" });
+      }
+      if (showGender) {
+        const gPts = pts.filter(p => p.pctGender !== null);
+        if (gPts.length) series.push({ athlete, type: "gender", pts: gPts, dash: "5,3", label: athlete + " (genre)" });
+      }
+    });
+
+    // X axis labels
+    const xLabels = allDates.length <= 6 ? allDates : Array.from({ length: 5 }, (_, i) => allDates[Math.round(i * (allDates.length - 1) / 4)]);
+    const fmtXDate = (d) => { const dt = new Date(d); return String(dt.getMonth() + 1).padStart(2,"0") + "/" + dt.getFullYear().toString().slice(2); };
+
+    return (
+      <div style={{ position: "relative" }} onMouseLeave={() => setTooltip(null)}>
+        <svg width="100%" viewBox={"0 0 " + W + " " + H} style={{ overflow: "visible", display: "block" }}>
+          {/* Y grid */}
+          {[0, 25, 50, 75, 100].map(pct => (
+            <g key={pct}>
+              <line x1={PAD.left} y1={svgY(pct)} x2={W - PAD.right} y2={svgY(pct)} stroke="#27272a" strokeWidth="1" />
+              <text x={PAD.left - 4} y={svgY(pct) + 4} textAnchor="end" fontSize="9" fill="#52525b">
+                {pct === 0 ? "top" : pct + "%"}
+              </text>
+            </g>
+          ))}
+          {/* X axis */}
+          <line x1={PAD.left} y1={PAD.top + cH} x2={W - PAD.right} y2={PAD.top + cH} stroke="#303036" strokeWidth="1" />
+          {xLabels.map((d, i) => (
+            <text key={i} x={svgX(d)} y={PAD.top + cH + 14} textAnchor="middle" fontSize="8" fill="#52525b">{fmtXDate(d)}</text>
+          ))}
+          {/* Lines */}
+          {series.map(s => {
+            const color = ATHLETE_COLORS[s.athlete];
+            if (s.pts.length < 2) return null;
+            const pts = s.pts.map(p => svgX(p.date) + "," + svgY(s.type === "total" ? p.pctTotal : p.pctGender)).join(" ");
+            return <polyline key={s.label} points={pts} fill="none" stroke={color} strokeWidth="2" strokeDasharray={s.dash} strokeLinejoin="round" opacity={s.type === "gender" ? 0.7 : 1} />;
+          })}
+          {/* Points interactifs */}
+          {series.map(s => {
+            const color = ATHLETE_COLORS[s.athlete];
+            return s.pts.map((p, i) => {
+              const pct = s.type === "total" ? p.pctTotal : p.pctGender;
+              const cx = svgX(p.date);
+              const cy = svgY(pct);
+              return (
+                <circle key={s.label + i} cx={cx} cy={cy} r="5"
+                  fill={color} stroke="#18181b" strokeWidth="1.5"
+                  style={{ cursor: "pointer" }}
+                  onMouseEnter={(e) => setTooltip({ cx, cy, p, type: s.type, color })}
+                  onClick={(e) => setTooltip(t => t && t.p === p && t.type === s.type ? null : { cx, cy, p, type: s.type, color })}
+                />
+              );
+            });
+          })}
+          {/* Infobulle SVG */}
+          {tooltip && (() => {
+            const { cx, cy, p, type, color } = tooltip;
+            const pct = type === "total" ? p.pctTotal : p.pctGender;
+            const rank = type === "total" ? p.rankOverall : p.rankGender;
+            const total = type === "total" ? p.totalOverall : p.totalGender;
+            const label = type === "total" ? "Général" : "Genre";
+            const lines = [p.raceName, p.distance, formatDate(p.date), label + " : " + rank + "/" + total + " (top " + pct + "%)"];
+            const bw = 160, bh = lines.length * 16 + 16;
+            const bx = cx + 10 + bw > W ? cx - bw - 10 : cx + 10;
+            const by = cy - bh / 2;
+            return (
+              <g>
+                <rect x={bx} y={by} width={bw} height={bh} rx="6" fill="#1f1f23" stroke={color} strokeWidth="1.5" />
+                {lines.map((l, i) => (
+                  <text key={i} x={bx + 10} y={by + 14 + i * 16} fontSize="10" fill={i === 0 ? "#fff" : "#888"} fontWeight={i === 0 ? "700" : "400"}>{l}</text>
+                ))}
+              </g>
+            );
+          })()}
+        </svg>
+      </div>
+    );
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       {/* View toggle */}
       <div style={{ display: "flex", gap: 4, background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 10, padding: 4, width: "fit-content" }}>
-        {["PRs", "Progression"].map(v => (
+        {["PRs", "Progression", "Classement"].map(v => (
           <button key={v} onClick={() => setView(v)} style={{
             padding: "6px 16px", borderRadius: 7, border: "none",
             background: view === v ? col.main : "transparent",
@@ -902,6 +1029,94 @@ function RunningRecords({ data }) {
           {!selectedRace && raceOptions.length === 0 && (
             <div style={{ color: "#52525b", textAlign: "center", padding: 40, fontSize: 14 }}>
               Enregistrez au moins une activité pour voir la progression.
+            </div>
+          )}
+        </div>
+      )}
+
+      {view === "Classement" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ color: "#888", fontSize: 13 }}>Pourcentage de rang sur l'ensemble des courses — plus c'est bas, mieux c'est.</div>
+
+          {/* Filtres */}
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+            {[
+              { key: "total", label: "Rang général", state: showTotal, set: setShowTotal, dash: false },
+              { key: "gender", label: "Rang par genre", state: showGender, set: setShowGender, dash: true },
+            ].map(({ key, label, state, set, dash }) => (
+              <button key={key} onClick={() => set(v => !v)} style={{
+                display: "flex", alignItems: "center", gap: 8,
+                padding: "6px 14px", borderRadius: 8,
+                border: "1.5px solid " + (state ? col.main : "#303036"),
+                background: state ? col.main + "18" : "transparent",
+                color: state ? col.main : "#52525b",
+                fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: "inherit",
+              }}>
+                <svg width="20" height="6">
+                  <line x1="0" y1="3" x2="20" y2="3" stroke={state ? col.main : "#52525b"} strokeWidth="2" strokeDasharray={dash ? "4,2" : "none"} />
+                </svg>
+                {label}
+              </button>
+            ))}
+            {/* Légende athlètes */}
+            <div style={{ marginLeft: "auto", display: "flex", gap: 12 }}>
+              {ATHLETES.map(a => (
+                <div key={a} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: ATHLETE_COLORS[a] }}>
+                  <div style={{ width: 10, height: 10, borderRadius: "50%", background: ATHLETE_COLORS[a] }} />
+                  {a}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Graphique */}
+          <div style={{ background: "#1f1f23", border: "1px solid #303036", borderRadius: 14, padding: "16px 16px 8px" }}>
+            <RankingChart />
+          </div>
+
+          {/* Tableau détail */}
+          {rankingPoints.length > 0 && (
+            <div style={{ background: "#1f1f23", border: "1px solid #303036", borderRadius: 14, overflow: "hidden" }}>
+              <div style={{ padding: "12px 16px", borderBottom: "1px solid #303036", color: "#888", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>
+                Détail des courses
+              </div>
+              <div style={{ overflowX: "auto" }}>
+                <div style={{ minWidth: 480 }}>
+                  {[...rankingPoints].sort((a, b) => b.date.localeCompare(a.date)).map((p, i) => (
+                    <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 80px 90px 110px 110px", borderBottom: "1px solid #1a1a1a", background: i % 2 === 0 ? "#1f1f23" : "#27272a", alignItems: "center" }}>
+                      <div style={{ padding: "10px 14px" }}>
+                        <div style={{ color: "#fff", fontWeight: 700, fontSize: 13 }}>{p.raceName}</div>
+                        <div style={{ color: "#52525b", fontSize: 11 }}>{formatDate(p.date)}{p.distance ? " · " + p.distance : ""}</div>
+                      </div>
+                      <div style={{ padding: "10px 14px" }}>
+                        <span style={{ color: ATHLETE_COLORS[p.athlete], fontWeight: 700, fontSize: 12 }}>{p.athlete}</span>
+                      </div>
+                      <div style={{ padding: "10px 14px", textAlign: "center" }}>
+                        {p.pctTotal !== null ? (
+                          <div>
+                            <div style={{ color: col.main, fontWeight: 800, fontSize: 14 }}>top {p.pctTotal}%</div>
+                            <div style={{ color: "#52525b", fontSize: 10 }}>{p.rankOverall}/{p.totalOverall}</div>
+                          </div>
+                        ) : <span style={{ color: "#3f3f46" }}>—</span>}
+                      </div>
+                      <div style={{ padding: "10px 14px", textAlign: "center" }}>
+                        {p.pctGender !== null ? (
+                          <div>
+                            <div style={{ color: "#fff", fontWeight: 800, fontSize: 14 }}>top {p.pctGender}%</div>
+                            <div style={{ color: "#52525b", fontSize: 10 }}>{p.rankGender}/{p.totalGender}</div>
+                          </div>
+                        ) : <span style={{ color: "#3f3f46" }}>—</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {rankingPoints.length === 0 && (
+            <div style={{ color: "#52525b", textAlign: "center", padding: 40, fontSize: 14 }}>
+              Enregistrez des classements pour voir cette vue.
             </div>
           )}
         </div>
