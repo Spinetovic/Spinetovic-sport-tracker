@@ -1,5 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 
+function useWindowWidth() {
+  const [w, setW] = useState(typeof window !== "undefined" ? window.innerWidth : 800);
+  useEffect(() => {
+    const fn = () => setW(window.innerWidth);
+    window.addEventListener("resize", fn);
+    return () => window.removeEventListener("resize", fn);
+  }, []);
+  return w;
+}
+
 const ATHLETES = ["Tom", "Camille"];
 
 const SPORT_ICONS = {
@@ -581,7 +591,8 @@ function RunningRecords({ data }) {
 
       {view === "PRs" && <>
         <div style={{ color: "#888", fontSize: 13 }}>Meilleur temps enregistré par distance et par athlète.</div>
-        <div style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "auto" }}>
+        <div style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "hidden" }}>
+          <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
           <div style={{ minWidth: 420, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", background: "#1f1f23" }}>
           <div style={{ padding: "12px 20px", borderBottom: "1px solid #1a1a1a", color: "#71717a", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>Distance</div>
           {ATHLETES.map(a => (
@@ -609,6 +620,7 @@ function RunningRecords({ data }) {
               })
             ];
           })}
+        </div>
         </div>
         </div>
 
@@ -832,7 +844,8 @@ function RunningRecords({ data }) {
                 })()}
 
                 {/* Data table */}
-                <div style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "auto" }}>
+                <div style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "hidden" }}>
+                  <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
                   <div style={{ minWidth: 500, display: "grid", gridTemplateColumns: "1fr 80px 80px 70px 90px 90px 80px", borderBottom: "1px solid #1a1a1a", background: "#27272a" }}>
                     {["Date", "Athlète", "Temps", "Allure", "Général", "Genre", "Évol."].map(h => (
                       <div key={h} style={{ padding: "10px 14px", color: "#71717a", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</div>
@@ -880,6 +893,7 @@ function RunningRecords({ data }) {
                       </div>
                     );
                   })}
+                  </div>
                 </div>
               </div>
             );
@@ -898,6 +912,7 @@ function RunningRecords({ data }) {
 
 // ── RUNNING TAB ───────────────────────────────────────────────────────────────
 function RunningTab({ data, setData, raceNames, setRaceNames, upcomingEvents, setUpcomingEvents }) {
+  const isMobile = useWindowWidth() < 768;
   const [subTab, setSubTab] = useState("Historique");
   const [form, setForm] = useState(defaultRunForm);
   const [filter, setFilter] = useState("Tous");
@@ -1228,6 +1243,7 @@ function RunningTab({ data, setData, raceNames, setRaceNames, upcomingEvents, se
 
 // ── HYROX COMPARISON ──────────────────────────────────────────────────────────
 function HyroxComparison({ data }) {
+  const isMobile = useWindowWidth() < 768;
   const col = SPORT_COLORS["Hyrox"];
   const [raceA, setRaceA] = useState("");
   const [raceB, setRaceB] = useState("");
@@ -1307,7 +1323,9 @@ function HyroxComparison({ data }) {
       )}
 
       {(a || b) && (
-        <div style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "auto" }}>
+        <div style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "hidden" }}>
+          <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+          <div style={{ minWidth: isMobile ? 480 : "unset" }}>
           {/* Header */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", background: "#27272a", borderBottom: "1px solid #1a1a1a" }}>
             <div style={{ padding: "12px 16px", color: "#71717a", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>Segment</div>
@@ -1364,6 +1382,8 @@ function HyroxComparison({ data }) {
               highlight={i % 2 === 1}
             />
           ))}
+          </div>
+          </div>
         </div>
       )}
     </div>
@@ -1421,6 +1441,8 @@ function createSession(name) {
 
 function HyroxLiveTracker({ data }) {
   const col = SPORT_COLORS["Hyrox"];
+  const width = useWindowWidth();
+  const isMobile = width < 768;
   const [mode, setMode] = useState("coach");
 
   // ── Mode Manuel ──
@@ -1658,7 +1680,7 @@ function HyroxLiveTracker({ data }) {
             )}
 
             {/* Chrono */}
-            <div style={{ fontFamily: "monospace", fontSize: 56, fontWeight: 900, color: sess.running ? sessColor : "#52525b", letterSpacing: "0.04em", marginBottom: 4, textShadow: sess.running ? "0 0 30px " + sessColor + "44" : "none" }}>
+            <div style={{ fontFamily: "monospace", fontSize: isMobile ? 72 : 56, fontWeight: 900, color: sess.running ? sessColor : "#52525b", letterSpacing: "0.04em", marginBottom: 4, textShadow: sess.running ? "0 0 30px " + sessColor + "44" : "none" }}>
               {formatElapsed(sess.elapsed)}
             </div>
 
@@ -1717,20 +1739,20 @@ function HyroxLiveTracker({ data }) {
               ) : (
                 <>
                   {nextCp && (
-                    <button onClick={validateCheckpoint} style={{ padding: "16px 0", width: "100%", maxWidth: 340, borderRadius: 14, border: "none", background: sessColor, color: "#000", fontWeight: 900, fontSize: 18, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 4px 20px " + sessColor + "44" }}>
+                    <button onClick={validateCheckpoint} style={{ padding: isMobile ? "20px 0" : "16px 0", width: "100%", maxWidth: 340, borderRadius: 14, border: "none", background: sessColor, color: "#000", fontWeight: 900, fontSize: isMobile ? 22 : 18, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 4px 20px " + sessColor + "44" }}>
                       ✓ {nextCp}
                     </button>
                   )}
                   {/* Ajustement chrono */}
                   <div style={{ width: "100%", maxWidth: 340 }}>
                     <div style={{ color: "#52525b", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.07em", textAlign: "center", marginBottom: 6 }}>Ajuster le chrono</div>
-                    <div style={{ display: "flex", gap: 4, justifyContent: "center" }}>
-                      {[[-60,"−1m"],[-30,"−30s"],[-10,"−10s"],[-5,"−5s"]].map(([d,l]) => (
-                        <button key={d} onClick={() => adjustTime(d)} style={{ flex: 1, padding: "7px 0", borderRadius: 7, border: "1px solid #f8717144", background: "#f8717111", color: "#f87171", fontWeight: 700, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>{l}</button>
-                      ))}
-                      {[[5,"+5s"],[10,"+10s"],[30,"+30s"],[60,"+1m"]].map(([d,l]) => (
-                        <button key={d} onClick={() => adjustTime(d)} style={{ flex: 1, padding: "7px 0", borderRadius: 7, border: "1px solid #4ade8044", background: "#4ade8011", color: "#4ade80", fontWeight: 700, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>{l}</button>
-                      ))}
+                    <div style={{ display: "flex", gap: 4, justifyContent: "center", marginBottom: isMobile ? 4 : 0, flexWrap: isMobile ? "wrap" : "nowrap" }}>
+                      {[[-60,"−1m"],[-30,"−30s"],[-10,"−10s"],[-5,"−5s"],[5,"+5s"],[10,"+10s"],[30,"+30s"],[60,"+1m"]].map(([d,l]) => {
+                        const isMinus = d < 0;
+                        return (
+                          <button key={d} onClick={() => adjustTime(d)} style={{ flex: isMobile ? "1 0 22%" : 1, padding: "9px 0", borderRadius: 7, border: "1px solid " + (isMinus ? "#f8717144" : "#4ade8044"), background: isMinus ? "#f8717111" : "#4ade8011", color: isMinus ? "#f87171" : "#4ade80", fontWeight: 700, fontSize: isMobile ? 13 : 11, cursor: "pointer", fontFamily: "inherit" }}>{l}</button>
+                        );
+                      })}
                     </div>
                   </div>
                   <button onClick={resetSession} style={{ padding: "10px 20px", borderRadius: 12, border: "1px solid #3f3f46", background: "transparent", color: "#888", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
@@ -1814,7 +1836,7 @@ function HyroxLiveTracker({ data }) {
               <button key={a} onClick={() => setManualAthlete(a)} style={{ padding: "8px 22px", borderRadius: 10, border: "2px solid " + (manualAthlete === a ? col.main : "#303036"), background: manualAthlete === a ? col.main + "22" : "transparent", color: manualAthlete === a ? col.main : "#888", fontWeight: 800, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>{a}</button>
             ))}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 20 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <label style={{ color: "#888", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>Temps actuel</label>
               <input value={currentTime} onChange={e => setCurrentTime(e.target.value)} placeholder="hh:mm:ss" style={{ background: "#27272a", border: "1px solid " + col.main + "55", borderRadius: 8, padding: "10px 14px", color: "#fff", fontSize: 18, fontWeight: 700, outline: "none", fontFamily: "inherit" }} />
@@ -2069,6 +2091,7 @@ function HyroxRecords({ data, trainingData, templates }) {
 
 // ── HYROX TAB ─────────────────────────────────────────────────────────────────
 function HyroxTab({ data, setData, partners, setPartners, trainingData, setTrainingData, templates, setTemplates, upcomingEvents, setUpcomingEvents }) {
+  const isMobile = useWindowWidth() < 768;
   const [subTab, setSubTab] = useState("Historique");
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(defaultHyroxForm);
@@ -2510,6 +2533,7 @@ const KARTING_SESSIONS = ["Qualifications", "Course 1", "Course 2", "Course 3", 
 const defaultKartForm = { date: "", circuit: "RKO Angerville", format: "Sprint", session: "", athlete: "Tom", group: "", rank: "", total: "", bestLap: "", notes: "" };
 
 function KartingTab({ data, setData, upcomingEvents, setUpcomingEvents }) {
+  const isMobile = useWindowWidth() < 768;
   const [subTab, setSubTab] = useState("Historique");
   const [form, setForm] = useState(defaultKartForm);
   const [editingId, setEditingId] = useState(null);
@@ -2587,7 +2611,8 @@ function KartingTab({ data, setData, upcomingEvents, setUpcomingEvents }) {
               {allLaps.length === 0 ? (
                 <div style={{ color: "#52525b", textAlign: "center", padding: 32, fontSize: 13 }}>Aucun temps enregistré</div>
               ) : (
-                <div>
+                <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+                  <div style={{ minWidth: 380 }}>
                   <div style={{ display: "grid", gridTemplateColumns: "40px 1fr 110px 130px 110px", background: "#27272a", borderBottom: "1px solid #1a1a1a" }}>
                     {["#", "Athlète", "Temps", "Session", "Date"].map(h => (
                       <div key={h} style={{ padding: "10px 14px", color: "#71717a", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</div>
@@ -2607,6 +2632,7 @@ function KartingTab({ data, setData, upcomingEvents, setUpcomingEvents }) {
                       </div>
                     );
                   })}
+                  </div>
                 </div>
               )}
             </div>
@@ -2619,7 +2645,8 @@ function KartingTab({ data, setData, upcomingEvents, setUpcomingEvents }) {
                 return (
                   <div key={date} style={{ marginBottom: 16 }}>
                     <div style={{ color: "#888", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{date}</div>
-                    <div style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 12, overflow: "auto" }}>
+                    <div style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 12, overflow: "hidden" }}>
+                      <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
                       <div style={{ minWidth: 450, display: "grid", gridTemplateColumns: "1fr 70px 130px 120px 100px", background: "#27272a", borderBottom: "1px solid #1a1a1a" }}>
                         {["Session", "Groupe", "Place", "Meilleur tour", "Athlète"].map(h => (
                           <div key={h} style={{ padding: "9px 14px", color: "#71717a", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</div>
@@ -2647,6 +2674,7 @@ function KartingTab({ data, setData, upcomingEvents, setUpcomingEvents }) {
                           );
                         });
                       })}
+                    </div>
                     </div>
                   </div>
                 );
@@ -3467,7 +3495,8 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates, partners, se
                 </div>
 
                 {/* Tableau détail */}
-                <div style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "auto" }}>
+                <div style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "hidden" }}>
+                  <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
                   <div style={{ minWidth: 400, display: "grid", gridTemplateColumns: `100px 80px 90px 80px${tpl ? tpl.segments.map(() => " 90px").join("") : ""}`, background: "#27272a", borderBottom: "1px solid #1a1a1a" }}>
                     {["Date", "Athlète", "Total", "Évol.", ...(tpl?.segments.map(s => `${s.distance||""}${s.unit||""} ${s.type}`) || [])].map(h => (
                       <div key={h} style={{ padding: "10px 12px", color: "#71717a", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</div>
@@ -3492,6 +3521,8 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates, partners, se
                       </div>
                     );
                   })}
+                  </div>
+                  </div>
                 </div>
               </div>
             );
@@ -3668,6 +3699,8 @@ function dashSecsFmt(s) {
 }
 
 function LineChart({ title, datasets, yFormat, sport }) {
+  const width = useWindowWidth();
+  const isMobile = width < 768;
   if (!datasets.some(d => d.points.length > 0)) return null;
   const allPoints = datasets.flatMap(d => d.points);
   if (!allPoints.length) return null;
@@ -3699,7 +3732,7 @@ function LineChart({ title, datasets, yFormat, sport }) {
   };
 
   return (
-    <div style={{ background: "#1f1f23", border: "1px solid #303036", borderRadius: 12, padding: "14px 16px", width: "calc(33% - 8px)", minWidth: 240, maxWidth: 340, flexShrink: 0, flexGrow: 0 }}>
+    <div style={{ background: "#1f1f23", border: "1px solid #303036", borderRadius: 12, padding: "14px 16px", width: isMobile ? "100%" : "calc(33% - 8px)", minWidth: isMobile ? "unset" : 240, maxWidth: isMobile ? "unset" : 340, flexShrink: 0, flexGrow: 0 }}>
       <div style={{ color: "#888", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>{title}</div>
       <svg width="100%" viewBox={"0 0 " + W + " " + H} style={{ overflow: "visible" }}>
         {/* Y grid + labels */}
@@ -3849,6 +3882,8 @@ function KartingCharts({ kartingData, visibleSports, collapsed, SectionHeader })
 function Dashboard({ runData, hyroxData, hyroxTrainingData, hyroxTemplates, kartingData, bodyData, upcomingEvents, setUpcomingEvents }) {
   const [visibleSports, setVisibleSports] = useState(["Course à pied", "Hyrox", "Karting"]);
   const [collapsed, setCollapsed] = useState({ upcoming: true, records: true, runCharts: true, hyroxCharts: true, kartCharts: true, recent: false });
+  const width = useWindowWidth();
+  const isMobile = width < 768;
 
   const toggleSport = (sport) => setVisibleSports(v => v.includes(sport) ? v.filter(s => s !== sport) : [...v, sport]);
   const toggleSection = (key) => setCollapsed(v => ({ ...v, [key]: !v[key] }));
@@ -4186,6 +4221,8 @@ function useFirebaseValue(path, defaultValue) {
 export default function App() {
   const [tab, setTab] = useState("Dashboard");
   const [prToast, setPrToast] = useState(null);
+  const width = useWindowWidth();
+  const isMobile = width < 768;
 
   const [runData, setRunDataRaw, runReady] = useFirebase("runs");
   const [hyroxData, setHyroxDataRaw, hyroxReady] = useFirebase("hyrox");
@@ -4271,34 +4308,34 @@ export default function App() {
       {prToast && <PRToast message={prToast} onClose={() => setPrToast(null)} />}
 
       {/* Header */}
-      <div className="header-pad" style={{ padding: "28px 32px 0", borderBottom: "1px solid #111" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
-          <div className="header-title" style={{ fontSize: 28, fontWeight: 900, letterSpacing: "-0.03em" }}>
+      <div className="header-pad" style={{ padding: isMobile ? "16px 16px 0" : "28px 32px 0", borderBottom: "1px solid #111" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: isMobile ? 16 : 24 }}>
+          <div className="header-title" style={{ fontSize: isMobile ? 20 : 28, fontWeight: 900, letterSpacing: "-0.03em" }}>
             TOM <span style={{ color: "#52525b" }}>&</span> CAMILLE
           </div>
-          <div className="hide-mobile" style={{ color: "#71717a", fontSize: 13, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>Sport Tracker</div>
+          {!isMobile && <div style={{ color: "#71717a", fontSize: 13, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>Sport Tracker</div>}
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
             {allReady ? (
-              <><div style={{ width: 7, height: 7, borderRadius: "50%", background: "#4ade80" }} /><span style={{ color: "#71717a", fontSize: 11 }}>Synchronisé</span></>
+              <><div style={{ width: 7, height: 7, borderRadius: "50%", background: "#4ade80" }} />{!isMobile && <span style={{ color: "#71717a", fontSize: 11 }}>Synchronisé</span>}</>
             ) : (
-              <><div style={{ width: 7, height: 7, borderRadius: "50%", background: "#FF6B35", animation: "spin 1s linear infinite" }} /><span style={{ color: "#888", fontSize: 11 }}>Connexion…</span></>
+              <><div style={{ width: 7, height: 7, borderRadius: "50%", background: "#FF6B35", animation: "spin 1s linear infinite" }} />{!isMobile && <span style={{ color: "#888", fontSize: 11 }}>Connexion…</span>}</>
             )}
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 0, overflowX: "auto" }}>
+        <div style={{ display: "flex", gap: 0, overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
           {tabs.map(t => {
             const isActive = tab === t;
             const col = t !== "Dashboard" ? SPORT_COLORS[t]?.main : "#fff";
             return (
               <button key={t} className="nav-btn" onClick={() => setTab(t)} style={{
-                padding: "10px 20px", background: "transparent", border: "none",
+                padding: isMobile ? "8px 12px" : "10px 20px", background: "transparent", border: "none",
                 borderBottom: isActive ? `2px solid ${col}` : "2px solid transparent",
                 color: isActive ? col : "#71717a", fontWeight: isActive ? 800 : 600,
-                fontSize: 13, cursor: "pointer", letterSpacing: "0.02em",
+                fontSize: isMobile ? 12 : 13, cursor: "pointer", letterSpacing: "0.02em",
                 transition: "all 0.15s", fontFamily: "inherit", whiteSpace: "nowrap", flexShrink: 0,
               }}>
-                {SPORT_ICONS[t] ? SPORT_ICONS[t] + " " : ""}{t}
+                {SPORT_ICONS[t] ? SPORT_ICONS[t] + " " : ""}{isMobile ? (t === "Course à pied" ? "Course" : t === "Poids & Corps" ? "Corps" : t) : t}
               </button>
             );
           })}
@@ -4306,7 +4343,7 @@ export default function App() {
       </div>
 
       {/* Content */}
-      <div className="content-pad" style={{ padding: "28px 32px", maxWidth: 960, margin: "0 auto" }}>
+      <div className="content-pad" style={{ padding: isMobile ? "16px" : "28px 32px", maxWidth: 960, margin: "0 auto" }}>
         {!allReady ? (
           <div style={{ textAlign: "center", padding: 80, color: "#71717a" }}>
             <div style={{ fontSize: 32, marginBottom: 12 }}>⚡</div>
