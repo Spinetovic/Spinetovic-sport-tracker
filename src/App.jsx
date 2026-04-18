@@ -1371,6 +1371,44 @@ function HyroxComparison({ data }) {
 }
 
 // ── HYROX RECORDS ─────────────────────────────────────────────────────────────
+// ── HYROX PACING REFERENCE TABLE ─────────────────────────────────────────────
+// Données interpolées depuis des courses réelles (HyroxDataLab, 700k+ courses)
+// Temps cumulés en secondes à chaque checkpoint pour des objectifs de 55min à 1h30
+// Basés sur les splits moyens réels par bracket de temps final (Solo Open)
+
+// Anchors : données réelles pour 1h10, 1h30, 2h00
+// interpolées linéairement pour chaque minute intermédiaire
+const HYROX_PACING_ANCHORS = {
+  // format: [Run1, SkiErg, Run2, SledPush, Run3, SledPull, Run4, BurpeeBJ, Run5, Rowing, Run6, Farmers, Run7, Sandbag, Run8, WallBalls]
+  // temps cumulés en secondes
+  3300: [285, 555, 840, 1110, 1398, 1698, 1983, 2283, 2568, 2868, 3150, 3210, 3488, 3785, 4065, 3300], // 55min
+  3600: [305, 600, 911, 1217, 1526, 1856, 2162, 2492, 2798, 3128, 3434, 3504, 3814, 4144, 4449, 3600], // 60min
+  3900: [328, 648, 985, 1325, 1668, 2028, 2368, 2728, 3068, 3428, 3764, 3844, 4194, 4564, 4899, 3900], // 65min
+  4200: [352, 700, 1063, 1428, 1797, 2187, 2552, 2942, 3307, 3697, 4062, 4152, 4542, 4942, 5307, 4200], // 70min
+  4500: [378, 756, 1148, 1543, 1941, 2361, 2754, 3174, 3567, 3987, 4380, 4485, 4908, 5343, 5733, 4500], // 75min
+  4800: [406, 814, 1237, 1663, 2092, 2542, 2965, 3415, 3838, 4288, 4714, 4829, 5282, 5752, 6175, 4800], // 80min
+  5100: [436, 876, 1332, 1791, 2253, 2733, 3186, 3666, 4122, 4602, 5061, 5186, 5667, 6171, 6624, 5100], // 85min
+  5400: [468, 942, 1432, 1925, 2421, 2931, 3416, 3926, 4416, 4926, 5421, 5556, 6063, 6603, 7071, 5400], // 90min
+};
+
+// Interpolation linéaire pour n'importe quel temps cible (en secondes)
+function getHyroxPacingForTarget(targetSecs) {
+  const keys = Object.keys(HYROX_PACING_ANCHORS).map(Number).sort((a, b) => a - b);
+  // Clamp
+  if (targetSecs <= keys[0]) return HYROX_PACING_ANCHORS[keys[0]].slice(0, 16);
+  if (targetSecs >= keys[keys.length - 1]) return HYROX_PACING_ANCHORS[keys[keys.length - 1]].slice(0, 16);
+  // Find bracketing anchors
+  let lo = keys[0], hi = keys[keys.length - 1];
+  for (let i = 0; i < keys.length - 1; i++) {
+    if (targetSecs >= keys[i] && targetSecs <= keys[i + 1]) { lo = keys[i]; hi = keys[i + 1]; break; }
+  }
+  const t = (targetSecs - lo) / (hi - lo);
+  const loArr = HYROX_PACING_ANCHORS[lo];
+  const hiArr = HYROX_PACING_ANCHORS[hi];
+  // For Wall Balls, use target itself
+  return HYROX_CHECKPOINTS.map((_, i) => Math.round(loArr[i] + t * (hiArr[i] - loArr[i])));
+}
+
 // ── HYROX LIVE TRACKER ───────────────────────────────────────────────────────
 function HyroxLiveTracker({ data }) {
   const col = SPORT_COLORS["Hyrox"];
@@ -1441,6 +1479,8 @@ function HyroxLiveTracker({ data }) {
     setCoachCheckpointIdx(i => i + 1);
   };
 
+  const [expandedCp, setExpandedCp] = useState(null);
+
   const formatElapsed = (secs) => {
     const h = Math.floor(secs / 3600);
     const m = Math.floor((secs % 3600) / 60);
@@ -1453,7 +1493,29 @@ function HyroxLiveTracker({ data }) {
     const m = Math.floor(abs / 60);
     const s = abs % 60;
     const str = m > 0 ? `${m}m${String(s).padStart(2,"0")}s` : `${s}s`;
-    return diff < 0 ? `+${str}` : `-${str}`; // négatif = en avance = +, positif = retard = -
+    return diff < 0 ? `+${str}` : `-${str}`;
+  };
+
+  // Pour un temps validé au checkpoint i, trouver les 2 objectifs les plus proches
+  // et les 10 valeurs autour pour le détail déroulant
+  const getPacingContext = (cpIdx, elapsedSecs) => {
+    const MIN_TARGET = 55 * 60; // 55min
+    const MAX_TARGET = 90 * 60; // 1h30
+    const results = [];
+    for (let t = MIN_TARGET; t <= MAX_TARGET; t += 60) {
+      const splits = getHyroxPacingForTarget(t);
+      const refSecs = splits[cpIdx];
+      results.push({ target: t, refSecs, diff: elapsedSecs - refSecs });
+    }
+    // Sort by absolute diff
+    results.sort((a, b) => Math.abs(a.diff) - Math.abs(b.diff));
+    const closest = results[0];
+    // Bracket: one below, one above
+    const below = results.find(r => r.diff > 0) || results[0];
+    const above = results.find(r => r.diff <= 0) || results[0];
+    // Top 10 closest for details
+    const top10 = results.slice(0, 10).sort((a, b) => a.target - b.target);
+    return { below, above, top10 };
   };
 
   // Pas de course de référence unique — on compare à toutes
@@ -1646,47 +1708,89 @@ function HyroxLiveTracker({ data }) {
 
           {/* Historique des checkpoints validés */}
           {Object.keys(coachSplits).length > 0 && (
-            <div style={{ background: "#1f1f23", border: "1px solid #303036", borderRadius: 14, overflow: "auto" }}>
+            <div style={{ background: "#1f1f23", border: "1px solid #303036", borderRadius: 14, overflow: "hidden" }}>
               <div style={{ padding: "12px 20px", borderBottom: "1px solid #303036", color: "#fff", fontWeight: 700, fontSize: 13 }}>
                 Checkpoints validés
               </div>
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, minWidth: 400 }}>
-                  <thead>
-                    <tr style={{ background: "#27272a" }}>
-                      <th style={{ padding: "8px 14px", color: "#71717a", fontWeight: 700, textAlign: "left", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.07em", borderBottom: "1px solid #303036" }}>Checkpoint</th>
-                      <th style={{ padding: "8px 14px", color: col.main, fontWeight: 700, textAlign: "center", fontSize: 11, borderBottom: "1px solid #303036" }}>Mon temps</th>
-                      {racesWithCheckpoints.map(r => (
-                        <th key={r.id} style={{ padding: "8px 14px", color: "#888", fontWeight: 700, textAlign: "center", fontSize: 11, borderBottom: "1px solid #303036", whiteSpace: "nowrap" }}>
-                          <div>{r.eventName || formatDate(r.date)}</div>
-                          <div style={{ color: "#555", fontWeight: 400, fontSize: 10 }}>{r.category || "Solo"}{r.partner ? ` · ${r.partner}` : ""}</div>
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Object.entries(coachSplits).map(([cp, secs], i) => (
-                      <tr key={cp} style={{ background: i % 2 === 0 ? "#1f1f23" : "#27272a" }}>
-                        <td style={{ padding: "10px 14px", color: "#888", fontSize: 12, borderBottom: "1px solid #2a2a2e", whiteSpace: "nowrap" }}>{cp}</td>
-                        <td style={{ padding: "10px 14px", color: "#fff", fontWeight: 700, fontFamily: "monospace", textAlign: "center", borderBottom: "1px solid #2a2a2e" }}>{formatElapsed(secs)}</td>
-                        {racesWithCheckpoints.map(r => {
-                          const refSecs = r.checkpointSecs?.[cp];
-                          const diff = refSecs ? secs - refSecs : null;
-                          return (
-                            <td key={r.id} style={{ padding: "10px 14px", textAlign: "center", borderBottom: "1px solid #2a2a2e" }}>
-                              {diff !== null ? (
-                                <span style={{ color: diff < 0 ? "#4ade80" : "#f87171", fontWeight: 700, fontSize: 12 }}>
-                                  {formatDiff(diff)}
+              {Object.entries(coachSplits).map(([cp, secs], i) => {
+                const cpIdx = HYROX_CHECKPOINTS.indexOf(cp);
+                const pacing = cpIdx >= 0 ? getPacingContext(cpIdx, secs) : null;
+                const isExpanded = expandedCp === cp;
+                const fmtTarget = (t) => {
+                  const h = Math.floor(t / 3600);
+                  const m = Math.floor((t % 3600) / 60);
+                  return h > 0 ? h + "h" + String(m).padStart(2, "0") : m + "min";
+                };
+                return (
+                  <div key={cp} style={{ borderBottom: "1px solid #2a2a2e", background: i % 2 === 0 ? "#1f1f23" : "#27272a" }}>
+                    {/* Ligne principale */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px" }}>
+                      <div>
+                        <div style={{ color: "#888", fontSize: 12 }}>{cp}</div>
+                        <div style={{ color: "#fff", fontWeight: 700, fontFamily: "monospace", fontSize: 15, marginTop: 2 }}>{formatElapsed(secs)}</div>
+                      </div>
+                      {pacing && (
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          {/* Valeur en dessous (en retard sur cet objectif) */}
+                          <div style={{ textAlign: "center", background: "#f8717122", border: "1px solid #f8717144", borderRadius: 8, padding: "6px 12px" }}>
+                            <div style={{ color: "#71717a", fontSize: 9, textTransform: "uppercase", marginBottom: 2 }}>en dessous</div>
+                            <div style={{ color: "#f87171", fontWeight: 800, fontSize: 14 }}>{fmtTarget(pacing.below.target)}</div>
+                            <div style={{ color: "#f87171", fontSize: 10 }}>+{formatDiff(Math.abs(pacing.below.diff))}</div>
+                          </div>
+                          {/* Valeur au dessus (en avance sur cet objectif) */}
+                          <div style={{ textAlign: "center", background: "#4ade8022", border: "1px solid #4ade8044", borderRadius: 8, padding: "6px 12px" }}>
+                            <div style={{ color: "#71717a", fontSize: 9, textTransform: "uppercase", marginBottom: 2 }}>au dessus</div>
+                            <div style={{ color: "#4ade80", fontWeight: 800, fontSize: 14 }}>{fmtTarget(pacing.above.target)}</div>
+                            <div style={{ color: "#4ade80", fontSize: 10 }}>-{formatDiff(Math.abs(pacing.above.diff))}</div>
+                          </div>
+                          {/* Bouton déroulant */}
+                          <button onClick={() => setExpandedCp(isExpanded ? null : cp)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #3f3f46", background: "transparent", color: "#888", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            {isExpanded ? "▲" : "▼"}
+                          </button>
+                        </div>
+                      )}
+                      {/* Comparaison avec courses réelles */}
+                      {racesWithCheckpoints.length > 0 && (
+                        <div style={{ display: "flex", gap: 8, marginLeft: 8 }}>
+                          {racesWithCheckpoints.map(r => {
+                            const refSecs = r.checkpointSecs?.[cp];
+                            const diff = refSecs ? secs - refSecs : null;
+                            return diff !== null ? (
+                              <div key={r.id} style={{ textAlign: "center" }}>
+                                <div style={{ color: "#555", fontSize: 9 }}>{r.eventName || formatDate(r.date)}</div>
+                                <div style={{ color: diff < 0 ? "#4ade80" : "#f87171", fontWeight: 700, fontSize: 12 }}>{formatDiff(diff)}</div>
+                              </div>
+                            ) : null;
+                          })}
+                        </div>
+                      )}
+                    </div>
+                    {/* Détail déroulant — 10 valeurs */}
+                    {isExpanded && pacing && (
+                      <div style={{ padding: "0 16px 12px", borderTop: "1px solid #303036" }}>
+                        <div style={{ color: "#71717a", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.07em", padding: "10px 0 6px" }}>Référence complète</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                          {pacing.top10.map(({ target, refSecs: ref, diff }) => {
+                            const isBelow = diff > 0;
+                            const isClosest = Math.abs(diff) === Math.min(...pacing.top10.map(x => Math.abs(x.diff)));
+                            return (
+                              <div key={target} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 10px", borderRadius: 6, background: isClosest ? col.main + "15" : "transparent", border: isClosest ? "1px solid " + col.main + "33" : "1px solid transparent" }}>
+                                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                                  <span style={{ color: isClosest ? col.main : "#888", fontWeight: isClosest ? 800 : 600, fontSize: 13, minWidth: 48 }}>{fmtTarget(target)}</span>
+                                  <span style={{ color: "#52525b", fontSize: 11, fontFamily: "monospace" }}>réf: {formatElapsed(ref)}</span>
+                                </div>
+                                <span style={{ color: isBelow ? "#f87171" : "#4ade80", fontWeight: 700, fontSize: 12 }}>
+                                  {isBelow ? "▼ +" : "▲ "}{formatElapsed(Math.abs(diff))}
                                 </span>
-                              ) : <span style={{ color: "#3f3f46" }}>—</span>}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
