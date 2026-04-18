@@ -1593,7 +1593,8 @@ function HyroxLiveTracker({ data }) {
                     background: isActive ? sCol + "22" : "transparent",
                     color: isActive ? sCol : "#888",
                     fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit",
-                    position: "relative",
+                    position: "relative", width: 160, textAlign: "left",
+                    overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis",
                   }}>
                     {s.running && <span style={{ position: "absolute", top: 4, right: sessions.length > 1 ? 18 : 6, width: 6, height: 6, borderRadius: "50%", background: sCol }} />}
                     {s.name}
