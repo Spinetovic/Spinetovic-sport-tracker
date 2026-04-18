@@ -3497,8 +3497,14 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates, partners, se
                 {/* Tableau détail */}
                 <div style={{ background: "#1f1f23", border: "1px solid #1a1a1a", borderRadius: 14, overflow: "hidden" }}>
                   <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-                  <div style={{ minWidth: 400, display: "grid", gridTemplateColumns: `100px 80px 90px 80px${tpl ? tpl.segments.map(() => " 90px").join("") : ""}`, background: "#27272a", borderBottom: "1px solid #1a1a1a" }}>
-                    {["Date", "Athlète", "Total", "Évol.", ...(tpl?.segments.map(s => `${s.distance||""}${s.unit||""} ${s.type}`) || [])].map(h => (
+                  {(() => {
+                    const segCols = tpl ? tpl.segments.map(() => " 90px").join("") : "";
+                    const cols = "100px 80px 90px 80px" + segCols;
+                    const segHeaders = tpl ? tpl.segments.map(s => (s.distance||"") + (s.unit||"") + " " + s.type) : [];
+                    return (
+                  <div style={{ minWidth: 400 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: cols, background: "#27272a", borderBottom: "1px solid #1a1a1a" }}>
+                    {["Date", "Athlète", "Total", "Évol.", ...segHeaders].map(h => (
                       <div key={h} style={{ padding: "10px 12px", color: "#71717a", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>{h}</div>
                     ))}
                   </div>
@@ -3510,7 +3516,7 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates, partners, se
                     const isPR = secs === Math.min(...progressionData.filter(x => x.athlete === r.athlete).map(x => parseTimeInput(x.totalTime)).filter(Boolean));
                     const acol = ATHLETE_COLORS[r.athlete];
                     return (
-                      <div key={r.id} style={{ minWidth: 400, display: "grid", gridTemplateColumns: `100px 80px 90px 80px${tpl ? tpl.segments.map(() => " 90px").join("") : ""}`, borderBottom: i < progressionData.length-1 ? "1px solid #111" : "none", background: i%2===0 ? "#1f1f23" : "#27272a" }}>
+                      <div key={r.id} style={{ minWidth: 400, display: "grid", gridTemplateColumns: cols, borderBottom: i < progressionData.length-1 ? "1px solid #111" : "none", background: i%2===0 ? "#1f1f23" : "#27272a" }}>
                         <div style={{ padding: "10px 12px", color: "#777", fontSize: 12 }}>{formatDate(r.date)}{isPR && <span style={{ marginLeft: 6, color: col.main, fontSize: 9, fontWeight: 800 }}>★PR</span>}</div>
                         <div style={{ padding: "10px 12px" }}><span style={{ color: acol, fontSize: 12, fontWeight: 700 }}>{r.athlete}</span></div>
                         <div style={{ padding: "10px 12px", color: "#fff", fontWeight: 800, fontSize: 13 }}>{r.totalTime}</div>
@@ -3522,6 +3528,8 @@ function HyroxTrainingTab({ data, setData, templates, setTemplates, partners, se
                     );
                   })}
                   </div>
+                    );
+                  })()}
                   </div>
                 </div>
               </div>
