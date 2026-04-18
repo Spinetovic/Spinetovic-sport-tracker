@@ -1472,6 +1472,13 @@ function HyroxLiveTracker({ data }) {
     setCoachStartTime(null);
   };
 
+  const adjustTime = (deltaSecs) => {
+    // Décaler le startTime pour ajuster le chrono en live
+    if (!coachRunning) return;
+    startTimeRef.current = startTimeRef.current + deltaSecs * 1000;
+    setCoachElapsed(prev => Math.max(0, prev - deltaSecs));
+  };
+
   const validateCheckpoint = () => {
     if (!coachRunning || coachCheckpointIdx >= HYROX_CHECKPOINTS.length) return;
     const cp = HYROX_CHECKPOINTS[coachCheckpointIdx];
@@ -1694,6 +1701,28 @@ function HyroxLiveTracker({ data }) {
                       ✓ {nextCp}
                     </button>
                   )}
+                  {/* Jauge d'ajustement */}
+                  <div style={{ width: "100%", maxWidth: 360 }}>
+                    <div style={{ color: "#52525b", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.07em", textAlign: "center", marginBottom: 6 }}>Ajuster le chrono</div>
+                    <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
+                      {[[-60, "−1min"], [-30, "−30s"], [-10, "−10s"], [-5, "−5s"]].map(([d, label]) => (
+                        <button key={d} onClick={() => adjustTime(d)} style={{
+                          flex: 1, padding: "8px 0", borderRadius: 8,
+                          border: "1px solid #f8717144", background: "#f8717111",
+                          color: "#f87171", fontWeight: 700, fontSize: 11,
+                          cursor: "pointer", fontFamily: "inherit",
+                        }}>{label}</button>
+                      ))}
+                      {[[5, "+5s"], [10, "+10s"], [30, "+30s"], [60, "+1min"]].map(([d, label]) => (
+                        <button key={d} onClick={() => adjustTime(d)} style={{
+                          flex: 1, padding: "8px 0", borderRadius: 8,
+                          border: "1px solid #4ade8044", background: "#4ade8011",
+                          color: "#4ade80", fontWeight: 700, fontSize: 11,
+                          cursor: "pointer", fontFamily: "inherit",
+                        }}>{label}</button>
+                      ))}
+                    </div>
+                  </div>
                   <button onClick={resetCoach} style={{
                     padding: "12px 24px", borderRadius: 12, border: "1px solid #3f3f46",
                     background: "transparent", color: "#888",
